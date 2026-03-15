@@ -3,21 +3,33 @@
 //
 #include "Node.h"
 #include <memory>
+#include <vector>
+
 #include "stack"
 
 void useOp(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     if (op.empty()) return;
     char c = op.top();
     op.pop();
-    if (c=='*') {
-        if (syms.empty()) return;
+    if (c=='+') {
+        if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
+        auto aNode = std::move(syms.top());
+        auto clon = aNode->clone();
+        syms.pop();
+        auto starNode = std::make_unique<Node>('*',std::move(aNode),nullptr);
+        auto concat = std::make_unique<Node>('.',std::move(clon),std::move(starNode));
+        syms.push(std::move(concat));
+    }
+
+    else if (c=='*') {
+        if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
         auto aNode = std::move(syms.top());
         syms.pop();
         auto starNode = std::make_unique<Node>(c, std::move(aNode),nullptr);
         syms.push(std::move(starNode));
     }
     else {
-        if (syms.size()<2) return ;
+        if (syms.size()<2) throw std::runtime_error("Invalid operation (need 2 operands)") ;
         auto aNodeRight = std::move(syms.top());
         syms.pop();
         auto aNodeLeft = std::move(syms.top());
@@ -41,7 +53,7 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             if (!op.empty()) op.pop();
         }
 
-        else if (c=='*' || c=='.' || c=='|') {
+        else if (c=='*' || c=='.' || c=='|' || c=='+') {
             while (!op.empty() && op.top()!='(' && getPrior(op.top())>=getPrior(c)) {
                 useOp(sym, op);
             }
@@ -56,26 +68,28 @@ std::unique_ptr<Node> Parser(const std::string& s) {
     }
 
     while (!op.empty()) {
-        if (op.top()=='(') {op.pop();continue;}
+        if (op.top()=='(') {throw std::runtime_error("Extra (");}
         useOp(sym, op);
     }
-
-    return std::move(sym.top());
+    if (sym.size() > 1) throw std::runtime_error("Unprocessed symbols!");
+    return sym.empty() ? nullptr : std::move(sym.top());
 }
 
 int getPrior(char c) {
     switch (c) {
+        case '+':
         case '*': return 3;
         case '.': return 2;
         case '|': return 1;
         default: return 0;
     }
 }
-void postOrder(Node* root) {
+void postOrder(Node* root,std::vector<char>& names) {
     if (root==nullptr) return;
-    postOrder(root->left.get());
-    postOrder(root->right.get());
-    std::cout << root->name << std::endl;
+    postOrder(root->left.get(),names);
+    postOrder(root->right.get(),names);
+    names.push_back(root->name);
+    //std::cout << root->name << std::endl;
 }
 void writeNodes(Node* root, std::ostream& out) {
     if (!root) return;
@@ -94,10 +108,6 @@ void drawTree(Node* root, std::string filename = "tree") {
     std::string dotFile = filename + ".dot";
     std::string pngFile = filename + ".png";
     std::ofstream out(dotFile);
-    if (!out) {
-        std::cerr << "Ошибка создания файла!" << std::endl;
-        return;
-    }
     out << "digraph G {\n";
     out << "    rankdir=TB;\n";
     writeNodes(root, out);
@@ -105,5 +115,4 @@ void drawTree(Node* root, std::string filename = "tree") {
     out.close();
     std::string command = "dot -Tpng " + dotFile + " -o " + pngFile;
     std::system(command.c_str());
-    std::cout << "Граф сохранен как " << pngFile << std::endl;
 }

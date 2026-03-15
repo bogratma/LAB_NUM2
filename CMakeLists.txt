@@ -7,4 +7,9 @@ add_executable(LAB_NUM2 main.cpp
         tree/SyntaxTree.cpp
         tree/SyntaxTree.h
         tree/Node.cpp
-        tree/Node.h)
+        tree/Node.h
+        NFA/State.cpp
+        NFA/State.h
+        NFA/NFA.cpp
+        NFA/NFA.h
+        NFA/Chunk.h)
