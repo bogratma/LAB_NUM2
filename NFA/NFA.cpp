@@ -9,29 +9,19 @@
 #include "../tree/Node.h"
 #include "Chunk.h"
 void NFA::compile(Node* root) {
+    if (root==nullptr) throw std::invalid_argument("Tree is empty!");
 std::vector<char> names;
     std::stack<Chunk> base;
 postOrder(root,names);
-    int i=0;
     for (char c : names) {
-        if (c =='a' || c=='b') {
-            State* start = create(std::to_string(i));
-            ++i;
-            State* end = create(std::to_string(i));
-            ++i;
-            addTransition(start,end,c);
+        if (c=='|') {
+            State* start = create();
+            State* end = create();
             end->isAcceptable=true;
-            base.emplace(start,end);
-        }
-        else if (c=='|') {
-            State* start = create(std::to_string(i));
-            ++i;
-            State* end = create(std::to_string(i));
-            ++i;
-            end->isAcceptable=true;
-            Chunk top = base.top();
+            if (base.size()<2) throw std::runtime_error("Less than 2 states!");
+            const Chunk top = base.top();
             base.pop();
-            Chunk bottom = base.top();
+            const Chunk bottom = base.top();
             base.pop();
             top.end->isAcceptable = false;
             bottom.end->isAcceptable = false;
@@ -42,13 +32,12 @@ postOrder(root,names);
             base.emplace(start,end);
         }
         else if (c=='*') {
-            State* start = create(std::to_string(i));
-            ++i;
-            State* end = create(std::to_string(i));
-            ++i;
+            State* start = create();
+            State* end = create();
             end->isAcceptable=true;
             addTransition(start,end,'$');
-            Chunk top = base.top();
+            if (base.empty()) throw std::runtime_error("Base is empty!");
+            const Chunk top = base.top();
             top.end->isAcceptable = false;
             base.pop();
             addTransition(start, top.start,'$');
@@ -57,7 +46,8 @@ postOrder(root,names);
             base.emplace(start,end);
         }
         else if (c=='.') {
-            Chunk second = base.top();
+            if (base.size()<2) throw std::runtime_error("Less than 2 states!");
+            const Chunk second = base.top();
             base.pop();
             Chunk first = base.top();
             base.pop();
@@ -65,7 +55,16 @@ postOrder(root,names);
             addTransition(first.end,second.start,'$');
             base.emplace(first);
         }
+        else {
+            State* start = create();
+            State* end = create();
+            addTransition(start,end,c);
+            end->isAcceptable=true;
+            base.emplace(start,end);
+        }
     }
     entry = base.top().start;
+    if (base.empty()) throw std::runtime_error("Base is empty!");
     base.pop();
 }
+

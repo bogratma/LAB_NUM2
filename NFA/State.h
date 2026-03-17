@@ -11,9 +11,10 @@
 
 class State {
     public:
-    std::string name;
+    static int name;
+    int id;
     bool isAcceptable = false;
-    explicit State(std::string name):name(std::move(name)){};
+    State(){id = name++;}
 };
 
 

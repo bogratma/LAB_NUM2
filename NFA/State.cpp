@@ -3,3 +3,4 @@
 //
 
 #include "State.h"
+int State::name = 0;
