@@ -17,7 +17,6 @@ postOrder(root,names);
         if (c=='|') {
             State* start = create();
             State* end = create();
-            end->isAcceptable=true;
             if (base.size()<2) throw std::runtime_error("Less than 2 states!");
             const Chunk top = base.top();
             base.pop();
@@ -25,6 +24,7 @@ postOrder(root,names);
             base.pop();
             top.end->isAcceptable = false;
             bottom.end->isAcceptable = false;
+            end->isAcceptable=true;
             addTransition(start,top.start,'$');
             addTransition(start,bottom.start,'$');
             addTransition(top.end,end,'$');
@@ -53,7 +53,7 @@ postOrder(root,names);
             base.pop();
             first.end->isAcceptable = false;
             addTransition(first.end,second.start,'$');
-            base.emplace(first);
+            base.emplace(first.start,second.end);
         }
         else {
             State* start = create();

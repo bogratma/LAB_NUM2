@@ -9,11 +9,11 @@
 void DFA::process(NFA& nfa) {
       std::queue<std::set<State*>> q;
       int id=0;
-      std::set<State*> start = epsClosure(nfa.entry,nfa);
+      const std::set<State*> start = epsClosure(nfa.entry,nfa);
       tableDFA[start] = id++;
       this->startDFA=0;
       q.push(start);
-      for (auto s : start) {
+      for (const auto s : start) {
             if (s->isAcceptable) {
                   finalDFA.insert(0);
             }
@@ -24,6 +24,7 @@ void DFA::process(NFA& nfa) {
             int gId = tableDFA[s];
             for (const char c : nfa.alphabet) {
                   if (c=='$') continue;
+                  alphabet.insert(c);
                   std::set<State*> nexts;
                   for (auto f: s) {
                         auto range = nfa.table.equal_range(std::make_pair(f,c));
@@ -40,8 +41,8 @@ void DFA::process(NFA& nfa) {
                         int v = id++;
                         tableDFA[closureGroup] = v;
                         q.push(closureGroup);
-                        for (auto s : closureGroup) {
-                              if (s->isAcceptable) {
+                        for (const auto d : closureGroup) {
+                              if (d->isAcceptable) {
                                     finalDFA.insert(v);
                               }
                         }

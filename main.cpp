@@ -3,7 +3,7 @@
 #include "NFA/State.h"
 #include "NFA/NFA.h"
 #include "DFA/DFA.h"
-
+#include "MDFA/MDFA.h"
 int main() {
 std::string regular;
 std::cin >> regular;
@@ -16,6 +16,9 @@ std::cin >> regular;
         DFA dfa ;
         dfa.process(nfa);
         dfa.dumpDot("dfa.dot");
+        MDFA mdfa;
+        mdfa.minimize(dfa);
+        mdfa.dumpDOT("mdfa.dot");
     }
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';

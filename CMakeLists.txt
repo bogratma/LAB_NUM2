@@ -12,4 +12,6 @@ add_executable(LAB_NUM2 main.cpp
         NFA/NFA.h
         NFA/Chunk.h
         DFA/DFA.cpp
-        DFA/DFA.h)
+        DFA/DFA.h
+        MDFA/MDFA.cpp
+        MDFA/MDFA.h)

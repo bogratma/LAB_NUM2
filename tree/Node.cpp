@@ -49,7 +49,7 @@ std::unique_ptr<Node> Parser(const std::string& s) {
 
         if (i>0) {
             char p = s[i-1];
-            bool left = getPrior(p)==0 || p==')'|| p=='*' || p=='+';
+            bool left = getPrior(p)==0 || p==')'|| p=='*';
             bool right = getPrior(c)==0 || c=='(';
             if (left && right) {
                 while (!op.empty() && getPrior(op.top())>=getPrior('.')) {
