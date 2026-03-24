@@ -4,17 +4,18 @@
 
 #include "NFA.h"
 
+#include <iostream>
 #include <stack>
 
 #include "../tree/Node.h"
 #include "Chunk.h"
 void NFA::compile(Node* root) {
     if (root==nullptr) throw std::invalid_argument("Tree is empty!");
-std::vector<char> names;
+    std::vector<Node*> nodes;
     std::stack<Chunk> base;
-postOrder(root,names);
-    for (char c : names) {
-        if (c=='|') {
+postOrder(root,nodes);
+    for (auto c : nodes) {
+        if (c->type==OR) {
             State* start = create();
             State* end = create();
             if (base.size()<2) throw std::runtime_error("Less than 2 states!");
@@ -31,7 +32,7 @@ postOrder(root,names);
             addTransition(bottom.end,end,'$');
             base.emplace(start,end);
         }
-        else if (c=='*') {
+        else if (c->type==STAR) {
             State* start = create();
             State* end = create();
             end->isAcceptable=true;
@@ -45,7 +46,7 @@ postOrder(root,names);
             addTransition(top.end,end,'$');
             base.emplace(start,end);
         }
-        else if (c=='.') {
+        else if (c->type==CONCAT) {
             if (base.size()<2) throw std::runtime_error("Less than 2 states!");
             const Chunk second = base.top();
             base.pop();
@@ -58,13 +59,13 @@ postOrder(root,names);
         else {
             State* start = create();
             State* end = create();
-            addTransition(start,end,c);
+            addTransition(start,end,c->name);
             end->isAcceptable=true;
             base.emplace(start,end);
         }
     }
     entry = base.top().start;
     if (base.empty()) throw std::runtime_error("Base is empty!");
-    base.pop();
+    base.pop();//
 }
 

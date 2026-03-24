@@ -2,6 +2,8 @@
 // Created by vlad on 3/13/26.
 //
 #include "Node.h"
+
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -17,6 +19,8 @@ void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     auto aNodeLeft = std::move(syms.top());
     syms.pop();
     auto binaryNode = std::make_unique<Node>(c, std::move(aNodeLeft), std::move(aNodeRight));
+    if (c=='|') binaryNode->type=OR;
+    else binaryNode->type=CONCAT;
     syms.push(std::move(binaryNode));
 
 }
@@ -25,10 +29,12 @@ void useUnary(std::stack<std::unique_ptr<Node>>& syms,char c) {
     if (c=='+') {
         if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
         auto aNode = std::move(syms.top());
-        auto clon = aNode->clone();
         syms.pop();
+        auto clon = aNode->clone();
         auto starNode = std::make_unique<Node>('*',std::move(aNode),nullptr);
+        starNode->type=STAR;
         auto concat = std::make_unique<Node>('.',std::move(clon),std::move(starNode));
+        concat->type=CONCAT;
         syms.push(std::move(concat));
     }
 
@@ -37,6 +43,7 @@ void useUnary(std::stack<std::unique_ptr<Node>>& syms,char c) {
         auto aNode = std::move(syms.top());
         syms.pop();
         auto starNode = std::make_unique<Node>(c, std::move(aNode),nullptr);
+        starNode->type=STAR;
         syms.push(std::move(starNode));
     }
 }
@@ -46,11 +53,22 @@ std::unique_ptr<Node> Parser(const std::string& s) {
 
     for (size_t i = 0; i < s.length(); ++i) {
         char c = s[i];
+        bool flag = false;
 
+        if (c=='%') {
+            if (i+1>=s.length()) throw std::runtime_error("End with %");
+            flag = true;
+            c = s[++i];
+        }
+        if (c=='[') {
+            std::vector<char> alp;
+        }
         if (i>0) {
-            char p = s[i-1];
-            bool left = getPrior(p)==0 || p==')'|| p=='*';
-            bool right = getPrior(c)==0 || c=='(';
+            size_t prev = flag ? i-2 : i-1;
+            char p = s[prev];
+            bool left = getPrior(p)==0 || p==')'|| p=='*' || p=='+';
+            if (!left && prev>0 && s[prev-1]=='%') left = true;//hmmm
+            bool right = getPrior(c)==0 || c=='(' || flag;//flag
             if (left && right) {
                 while (!op.empty() && getPrior(op.top())>=getPrior('.')) {
                     useBinary(sym,op);
@@ -59,9 +77,9 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             }
         }
 
-        if (c=='(') op.push(c);
+        if (!flag && c=='(') op.push(c);
 
-        else if (c==')') {
+        else if (!flag && c==')') {
             bool correct = false;
             while (!op.empty()) {
                 if (op.top()=='(') {
@@ -70,15 +88,16 @@ std::unique_ptr<Node> Parser(const std::string& s) {
                 }
                 useBinary(sym, op);
             }
+
             if (!correct) throw std::runtime_error("Extra )");
                 op.pop();
         }
 
-        else if(c=='*' || c=='+') {
+        else if(!flag && (c=='*' || c=='+')) {
             useUnary(sym, c);
         }
 
-        else if (c=='|') {
+        else if (!flag && c=='|') {
             while (!op.empty() && getPrior(op.top())>=getPrior(c)) {
                 useBinary(sym, op);
             }
@@ -87,8 +106,10 @@ std::unique_ptr<Node> Parser(const std::string& s) {
 
         else {
             auto aNode = std::make_unique<Node>(c);
+            aNode->type=SYM;
             sym.push(std::move(aNode));
         }
+
     }
 
     while (!op.empty()) {
@@ -111,13 +132,14 @@ int getPrior(char c) {
         default: return 0;
     }
 }
-void postOrder(Node* root,std::vector<char>& names) {
+
+void postOrder(Node* root,std::vector<Node*>& names) {
     if (root==nullptr) return;
     postOrder(root->left.get(),names);
     postOrder(root->right.get(),names);
-    names.push_back(root->name);
-    //std::cout << root->name << std::endl;
+    names.push_back(root);
 }
+
 void writeNodes(Node* root, std::ostream& out) {
     if (!root) return;
     writeNodes(root->left.get(), out);

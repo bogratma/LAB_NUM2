@@ -15,6 +15,7 @@ class DFA {
     int startDFA{};
     std::map<std::set<State*>,int> tableDFA{};
     std::map<int,std::map<char,int>> transitionTable{};
+
     std::set<int> finalDFA{};
     std::set<char> alphabet{};
     DFA(){};

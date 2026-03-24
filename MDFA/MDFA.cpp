@@ -16,14 +16,15 @@ std::set<int> notFinal(const DFA& dfa) {
     }
     return noDFA;
 }
-int findGroupInd(int id, std::vector<std::set<int>>& groups) {
+int findGroupInd(int id, const std::vector<std::set<int>>& groups) {
     int idx = -1;
     for (int i = 0; i < groups.size(); i++) {
-        if (groups[i].contains(id)) idx = i;
+        if (groups[i].contains(id)) //idx = i;
+            return i;
     }
     return idx;
 }
-bool MDFA::checkGroup(DFA& dfa , const std::set<int>& group) {
+bool MDFA::checkGroup(DFA& dfa , const std::set<int>& group) const {
    if (group.size()<=1) return true;
     const int first = *group.begin();
     for (char c :dfa.alphabet) {
@@ -34,7 +35,7 @@ bool MDFA::checkGroup(DFA& dfa , const std::set<int>& group) {
         const int groups  = findGroupInd(target, Pi);
         for (int s : group) {
             int targets = -1;
-            if (dfa.transitionTable[first].contains(c)) {
+            if (dfa.transitionTable[s].contains(c)) {
                 targets = dfa.transitionTable[s][c];
             }
             int cur = findGroupInd(targets,Pi);
@@ -43,7 +44,7 @@ bool MDFA::checkGroup(DFA& dfa , const std::set<int>& group) {
     }
     return true;
 }
-std::vector<std::set<int>> MDFA::split(const std::set<int>& group, DFA& dfa) {
+std::vector<std::set<int>> MDFA::split(const std::set<int>& group, DFA& dfa) const {
     std::map<std::vector<int>,std::set<int>> groups;
     for (auto state : group) {
         std::vector<int> b;
@@ -82,10 +83,11 @@ void MDFA::buildMFDA(DFA& dfa) {
     }
 }
 void MDFA::minimize(DFA& dfa) {
+    Pi.clear();
 std::set<int> notfinal = notFinal(dfa);
 std::set<int> final = getFinal(dfa);
-    Pi.push_back(final);
-    Pi.push_back(notfinal);
+   if (!final.empty()) Pi.push_back(final);
+   if (!notfinal.empty()) Pi.push_back(notfinal);
     while (true) {
         std::vector<std::set<int>> nexts;
         int old = Pi.size();
@@ -103,6 +105,46 @@ std::set<int> final = getFinal(dfa);
     }
     buildMFDA(dfa);
 }
+
+bool MDFA::match(const std::string& str) {
+    int start = this->startMDFA;
+    for (char c : str) {
+        if (!tableTransitionMDFA[start].contains(c)) return false;
+        start = tableTransitionMDFA[start][c];
+    }
+    return finalPi.contains(start);
+}
+bool MDFA::search(const std::string& str) {
+    for (int i=0; i <str.length(); i++) {
+        int start = this->startMDFA;
+        for (int j=i; j <str.length(); j++) {
+            char c = str[j];
+            if (!tableTransitionMDFA[start].contains(c)) break;
+            start = tableTransitionMDFA[start][c];
+            if (finalPi.contains(start)) return true;
+        }
+        if (finalPi.contains(this->startMDFA)) return true;
+    }
+    return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void MDFA::dumpDOT(std::string filename) {
     std::ofstream out(filename);
     out << "digraph MDFA {" << std::endl;

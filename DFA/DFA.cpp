@@ -47,7 +47,7 @@ void DFA::process(NFA& nfa) {
                               }
                         }
                   }
-                  transitionTable[gId][c] = tableDFA[closureGroup];
+                  transitionTable[gId][c] = tableDFA[closureGroup];//
             }
       }
 }

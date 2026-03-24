@@ -19,6 +19,15 @@ std::cin >> regular;
         MDFA mdfa;
         mdfa.minimize(dfa);
         mdfa.dumpDOT("mdfa.dot");
+
+        std::cout<<"Input: ";
+        std::string str;
+        std::cin>>str;
+        std::cout<<"String is matched flag: "<<mdfa.match(str)<<std::endl;
+        std::cout<<"Input: ";
+        std::cin>>str;
+        std::cout<<"String is search flag: "<<mdfa.search(str)<<std::endl;
+
     }
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';
