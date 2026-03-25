@@ -14,4 +14,6 @@ add_executable(LAB_NUM2 main.cpp
         DFA/DFA.cpp
         DFA/DFA.h
         MDFA/MDFA.cpp
-        MDFA/MDFA.h)
+        MDFA/MDFA.h
+        Regex/Regex.cpp
+        Regex/Regex.h)

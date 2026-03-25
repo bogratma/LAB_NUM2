@@ -12,7 +12,7 @@ public:
     std::map<int, std::map<char,int>> tableTransitionMDFA;
     std::vector<std::set<int>> Pi;
     std::set<int> finalPi;
-
+    std::set<char> alphabet;
     int states{};
     int startMDFA{};
 
@@ -23,6 +23,7 @@ public:
     void dumpDOT(std::string filename);
     bool match(const std::string&);
     bool search(const std::string&);
+    MDFA diff(MDFA&, MDFA&);
 };
 
 

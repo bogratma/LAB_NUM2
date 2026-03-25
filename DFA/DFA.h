@@ -24,6 +24,7 @@ class DFA {
     std::set<State*> Tmove(const std::set<State*>&,NFA&,char);
     void DFS(State* cur,NFA& nfa, std::set<State*>& states) ;
     void dumpDot(const std::string& filename) ;
+    void makeComplete(const std::set<char>& alphabet);
 };
 
 

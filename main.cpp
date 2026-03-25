@@ -4,35 +4,28 @@
 #include "NFA/NFA.h"
 #include "DFA/DFA.h"
 #include "MDFA/MDFA.h"
+#include "Regex/Regex.h"
+
 int main() {
-std::string regular;
-std::cin >> regular;
     try {
-        std::unique_ptr<Node> root = std::move(Parser(regular));
-        drawTree(root.get(),"tree");
-        NFA nfa;
-        nfa.compile(root.get());
-        nfa.dumpDot("nfa.dot");
-        DFA dfa ;
-        dfa.process(nfa);
-        dfa.dumpDot("dfa.dot");
+        std::string regular;
+        std::cout<<"Enter regular expression1: "<<std::endl;
+        std::cin >> regular;
+        Regex regex(regular);
+
+        std::string regular1;
+        std::cout<<"Enter regular expression2: "<<std::endl;
+        std::cin >> regular1;
+        Regex regex1(regular1);
+        regex.comp();
+        regex1.comp();
+        regex.automata.dumpDOT("mdfa1.dot");
+        regex1.automata.dumpDOT("mdfa2.dot");
         MDFA mdfa;
-        mdfa.minimize(dfa);
-        mdfa.dumpDOT("mdfa.dot");
-
-        std::cout<<"Input: ";
-        std::string str;
-        std::cin>>str;
-        std::cout<<"String is matched flag: "<<mdfa.match(str)<<std::endl;
-        std::cout<<"Input: ";
-        std::cin>>str;
-        std::cout<<"String is search flag: "<<mdfa.search(str)<<std::endl;
-
+        mdfa = mdfa.diff(regex.automata,regex1.automata);
+        mdfa.dumpDOT("mdfa3.dot");
     }
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';
     }
-
-
-
 }

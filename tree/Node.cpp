@@ -51,6 +51,7 @@ std::unique_ptr<Node> Parser(const std::string& s) {
     std::stack<char> op;
     std::stack<std::unique_ptr<Node>> sym;
 
+    bool prev = false;
     for (size_t i = 0; i < s.length(); ++i) {
         char c = s[i];
         bool flag = false;
@@ -60,24 +61,36 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             flag = true;
             c = s[++i];
         }
-        if (c=='[') {
-            std::vector<char> alp;
+        if (!flag && c=='[') {
+          const size_t close = s.find(']',i);
+            if (close == std::string::npos) throw std::runtime_error("No ]");
+            char start = s[i+1];
+            char end = s[i+3];
+            if (start > end) std::swap(start,end);
+            auto first = std::make_unique<Node>(start);
+            first->type=SYM;
+            for (char m = start+1; m <=end; ++m) {
+                auto next = std::make_unique<Node>(m);
+                next->type=SYM;
+                auto ornode = std::make_unique<Node>('|');
+                ornode->type=OR;
+                ornode->left=std::move(first);
+                ornode->right=std::move(next);
+                first=std::move(ornode);
+            }
+            sym.push(std::move(first));
+            i=close;
+            continue;
         }
-        if (i>0) {
-            size_t prev = flag ? i-2 : i-1;
-            char p = s[prev];
-            bool left = getPrior(p)==0 || p==')'|| p=='*' || p=='+';
-            if (!left && prev>0 && s[prev-1]=='%') left = true;//hmmm
-            bool right = getPrior(c)==0 || c=='(' || flag;//flag
-            if (left && right) {
+        bool curPrev = flag || getPrior(s[i]) == 0;
+        if (prev && (curPrev || c=='(' ||c=='[')) {
                 while (!op.empty() && getPrior(op.top())>=getPrior('.')) {
                     useBinary(sym,op);
                 }
                 op.push('.');
-            }
         }
 
-        if (!flag && c=='(') op.push(c);
+        if (!flag && c=='('){ op.push(c);prev=false;}
 
         else if (!flag && c==')') {
             bool correct = false;
@@ -88,13 +101,13 @@ std::unique_ptr<Node> Parser(const std::string& s) {
                 }
                 useBinary(sym, op);
             }
-
             if (!correct) throw std::runtime_error("Extra )");
-                op.pop();
+            op.pop();
+            prev=true;
         }
-
         else if(!flag && (c=='*' || c=='+')) {
             useUnary(sym, c);
+            prev = true;
         }
 
         else if (!flag && c=='|') {
@@ -102,12 +115,14 @@ std::unique_ptr<Node> Parser(const std::string& s) {
                 useBinary(sym, op);
             }
             op.push(c);
+            prev = false;
         }
 
         else {
             auto aNode = std::make_unique<Node>(c);
             aNode->type=SYM;
             sym.push(std::move(aNode));
+            prev = true;
         }
 
     }
@@ -128,7 +143,10 @@ int getPrior(char c) {
         case '.': return 2;
         case '|': return 1;
         case '(':
-        case ')':return -1;
+        case ')':
+        case '[':
+        case ']':
+            return -1;
         default: return 0;
     }
 }

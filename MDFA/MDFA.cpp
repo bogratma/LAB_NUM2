@@ -5,6 +5,7 @@
 #include "MDFA.h"
 
 #include <iostream>
+#include <queue>
 
 std::set<int> getFinal(const DFA& dfa) {
     return dfa.finalDFA;
@@ -74,10 +75,12 @@ void MDFA::buildMFDA(DFA& dfa) {
              this->finalPi.insert(i);
          }
         for (char sym : dfa.alphabet) {
+
             if (dfa.transitionTable[rep].contains(sym)) {
                 int oldTarget = dfa.transitionTable[rep][sym];
                 int newTarget = findGroupInd(oldTarget,Pi);
                 this->tableTransitionMDFA[i][sym] = newTarget;
+                this->alphabet.insert(sym);
             }
         }
     }
@@ -127,23 +130,47 @@ bool MDFA::search(const std::string& str) {
     }
     return false;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+MDFA MDFA::diff(MDFA& A, MDFA &B) {
+    MDFA dif;
+    std::set<char> alphabet = A.alphabet;
+    alphabet.insert(B.alphabet.begin(), B.alphabet.end());
+    std::map<std::pair<int, int>, int> pairs;
+    std::queue<std::pair<int, int>> q;
+    const std::pair startPair = {A.startMDFA, B.startMDFA};
+    pairs[startPair] = 0;
+    dif.startMDFA = 0;
+    q.push(startPair);
+    int nextId = 1;
+    while (!q.empty()) {
+        std::pair<int, int> currPair = q.front();
+        q.pop();
+        int newId = pairs[currPair];
+        bool aFinal = currPair.first != -1 && A.finalPi.contains(currPair.first);
+        bool bFinal = currPair.second != -1 && B.finalPi.contains(currPair.second);
+        if (aFinal && !bFinal) {
+            dif.finalPi.insert(newId);
+        }
+        for (char c : alphabet) {
+            int nextA = -1;
+            if (currPair.first != -1 && A.tableTransitionMDFA.contains(currPair.first) && A.tableTransitionMDFA.at(currPair.first).contains(c)) {
+                nextA = A.tableTransitionMDFA.at(currPair.first).at(c);
+            }
+            int nextB = -1;
+            if (currPair.second != -1 && B.tableTransitionMDFA.contains(currPair.second) && B.tableTransitionMDFA.at(currPair.second).contains(c)) {
+                nextB = B.tableTransitionMDFA.at(currPair.second).at(c);
+            }
+            std::pair nextPair = {nextA, nextB};
+            if (!pairs.contains(nextPair)) {
+                pairs[nextPair] = nextId++;
+                q.push(nextPair);
+            }
+            dif.tableTransitionMDFA[newId][c] = pairs[nextPair];
+        }
+    }
+    dif.states = nextId;
+    dif.alphabet = alphabet;
+    return dif;
+}
 
 void MDFA::dumpDOT(std::string filename) {
     std::ofstream out(filename);

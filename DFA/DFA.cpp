@@ -50,6 +50,7 @@ void DFA::process(NFA& nfa) {
                   transitionTable[gId][c] = tableDFA[closureGroup];//
             }
       }
+      makeComplete(alphabet);
 }
 std::set<State*> DFA::epsClosure(State* p, NFA& nfa) {
       std::set<State*> epsClose;
@@ -76,8 +77,25 @@ void DFA::DFS(State* cur, NFA& nfa, std::set<State*>& states) {
             DFS(t->second,nfa,states);
       }
 }
-
-
+void DFA::makeComplete(const std::set<char>& alphabet) {
+      int trapId = -1;
+      int numStates = tableDFA.size();
+      for (int i = 0; i < numStates; ++i) {
+            for (char c : alphabet) {
+                  if (c == '$') continue;
+                  if (!transitionTable[i].contains(c)) {
+                        if (trapId == -1) {
+                              trapId = numStates;
+                              for (char a : alphabet) {
+                                    if (a == '$') continue;
+                                    transitionTable[trapId][a] = trapId;
+                              }
+                        }
+                        transitionTable[i][c] = trapId;
+                  }
+            }
+      }
+}
 
 void DFA::dumpDot(const std::string& filename) {
       std::ofstream out(filename);
