@@ -171,10 +171,20 @@ MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
         }
     }
     dif.alphabet = alphabet;
+    dif.selfMin();
     return dif;
 }
+void MDFA::selfMin() {
+    DFA temp;
+    temp.startDFA =this->startMDFA;
+    temp.finalDFA =this->finalPi;
+    temp.alphabet = this->alphabet;
+    temp.transitionTable = this->tableTransitionMDFA;
+    this->minimize(temp);
+}
 
-void MDFA::dumpDOT(std::string filename) {
+
+void MDFA::dumpDOT(const std::string& filename) {
     std::ofstream out(filename);
     out << "digraph MDFA {" << std::endl;
     out << "rankdir=LR;" << std::endl;

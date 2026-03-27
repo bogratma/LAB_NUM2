@@ -36,6 +36,7 @@ class Regex {
         if (!is_compiled) comp();
         return automata.search(s);
     }
+
 };
 
 

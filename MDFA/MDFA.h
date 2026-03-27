@@ -19,9 +19,10 @@ public:
     bool checkGroup(DFA& dfa,const std::set<int>& group) const;
     std::vector<std::set<int>> split(const std::set<int>& group,DFA& dfa) const;
     void buildMFDA(DFA& dfa);
-    void dumpDOT(std::string filename);
+    void dumpDOT(const std::string& filename);
     bool match(const std::string&);
     bool search(const std::string&);
+    void selfMin();
     MDFA diff(MDFA&, MDFA&,bool);
 };
 

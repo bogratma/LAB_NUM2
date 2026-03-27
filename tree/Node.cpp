@@ -47,6 +47,135 @@ void useUnary(std::stack<std::unique_ptr<Node>>& syms,char c) {
         syms.push(std::move(starNode));
     }
 }
+std::unique_ptr<Node> useRange(const std::string& s, size_t& i) {
+    const size_t close = s.find(']', i);
+    if (close == std::string::npos) throw std::runtime_error("No ]");
+    std::unique_ptr<Node> rangeRoot = nullptr;
+    for (size_t j = i + 1; j < close; ++j) {
+        char start = s[j];
+        char end = start;
+        if (j + 2 < close && s[j + 1] == '-') {
+            end = s[j + 2];
+            j += 2;
+        }
+        if (start > end) std::swap(start, end);
+        for (char m = start; m <= end; ++m) {
+            auto nextLeaf = std::make_unique<Node>(m);
+            nextLeaf->type = SYM;
+            if (!rangeRoot) {
+                rangeRoot = std::move(nextLeaf);
+            } else {
+                auto orNode = std::make_unique<Node>('|');
+                orNode->type = OR;
+                orNode->left = std::move(rangeRoot);
+                orNode->right = std::move(nextLeaf);
+                rangeRoot = std::move(orNode);
+            }
+        }
+    }
+    if (!rangeRoot) throw std::runtime_error("Empty []");
+    i = close;
+    return rangeRoot;
+}
+std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
+    size_t j = i + 1;
+    int m = 0;
+    int n = -1;
+    if (j < s.size() && s[j] == ',') {
+        m = 0;
+        j++;
+
+        if (j >= s.size() || !isdigit(s[j]))
+            throw std::runtime_error("Invalid {,}");
+        n = 0;
+        while (j < s.size() && isdigit(s[j])) {
+            n = n * 10 + (s[j] - '0');
+            j++;
+        }
+    }
+    else if (j < s.size() && isdigit(s[j])) {
+        m = 0;
+        while (j < s.size() && isdigit(s[j])) {
+            m = m * 10 + (s[j] - '0');
+            j++;
+        }
+        if (j < s.size() && s[j] == '}') {
+            n = m;
+        }
+        else if (j < s.size() && s[j] == ',') {
+            j++;
+            if (j < s.size() && isdigit(s[j])) {
+                n = 0;
+                while (j < s.size() && isdigit(s[j])) {
+                    n = n * 10 + (s[j] - '0');
+                    j++;
+                }
+            } else {
+                n = -1;
+            }
+        } else {
+            throw std::runtime_error("Invalid {m...}");
+        }
+    }
+    else {
+        throw std::runtime_error("Invalid {");
+    }
+    if (j >= s.size() || s[j] != '}')
+        throw std::runtime_error("No }");
+    i = j;
+    if (n != -1 && m > n)
+        throw std::runtime_error("Invalid range");
+
+    return {m, n};
+}
+void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, size_t& i) {
+    if (syms.empty()) throw std::runtime_error("Repeat needs operand");
+    auto base = std::move(syms.top());
+    syms.pop();
+    auto [m, n] = parseBounds(s, i);
+    auto makeChain = [&](int count) -> std::unique_ptr<Node> {
+        if (count == 0) {
+            auto eps = std::make_unique<Node>('$');
+            eps->type = SYM;
+            return eps;
+        }
+        std::unique_ptr<Node> chain = base->clone();
+        for (int k = 1; k < count; ++k) {
+            auto concat = std::make_unique<Node>('.', std::move(chain), base->clone());
+            concat->type = CONCAT;
+            chain = std::move(concat);
+        }
+        return chain;
+    };
+    std::unique_ptr<Node> result = nullptr;
+    if (n != -1) {
+        for (int k = m; k <= n; ++k) {
+            auto branch = makeChain(k);
+            if (!result) {
+                result = std::move(branch);
+            } else {
+                auto orNode = std::make_unique<Node>('|', std::move(result), std::move(branch));
+                orNode->type = OR;
+                result = std::move(orNode);
+            }
+        }
+    }
+    else {
+        result = makeChain(m);
+        auto star = std::make_unique<Node>('*', base->clone(), nullptr);
+        star->type = STAR;
+
+        if (m == 0) {
+            result = std::move(star);
+        } else {
+            auto concat = std::make_unique<Node>('.', std::move(result), std::move(star));
+            concat->type = CONCAT;
+            result = std::move(concat);
+        }
+    }
+
+    syms.push(std::move(result));
+}
 std::unique_ptr<Node> Parser(const std::string& s) {
     std::stack<char> op;
     std::stack<std::unique_ptr<Node>> sym;
@@ -61,27 +190,7 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             flag = true;
             c = s[++i];
         }
-        if (!flag && c=='[') {
-          const size_t close = s.find(']',i);
-            if (close == std::string::npos) throw std::runtime_error("No ]");
-            char start = s[i+1];
-            char end = s[i+3];
-            if (start > end) std::swap(start,end);
-            auto first = std::make_unique<Node>(start);
-            first->type=SYM;
-            for (char m = start+1; m <=end; ++m) {
-                auto next = std::make_unique<Node>(m);
-                next->type=SYM;
-                auto ornode = std::make_unique<Node>('|');
-                ornode->type=OR;
-                ornode->left=std::move(first);
-                ornode->right=std::move(next);
-                first=std::move(ornode);
-            }
-            sym.push(std::move(first));
-            i=close;
-            continue;
-        }
+
         bool curPrev = flag || getPrior(s[i]) == 0;
         if (prev && (curPrev || c=='(' ||c=='[')) {
                 while (!op.empty() && getPrior(op.top())>=getPrior('.')) {
@@ -117,7 +226,14 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             op.push(c);
             prev = false;
         }
-
+        else if (!flag && c == '[') {
+            sym.push(useRange(s, i));
+            prev = true;
+        }
+        else if (!flag && c == '{') {
+            useRepeat(sym, s, i);
+            prev = true;
+        }
         else {
             auto aNode = std::make_unique<Node>(c);
             aNode->type=SYM;
@@ -146,6 +262,8 @@ int getPrior(char c) {
         case ')':
         case '[':
         case ']':
+        case '{':
+        case '}':
             return -1;
         default: return 0;
     }

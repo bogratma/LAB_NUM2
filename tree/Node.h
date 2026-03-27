@@ -11,10 +11,11 @@ enum Type {
     STAR,
     OR,
     CONCAT,
-    SYM
+    SYM,
+    LOOKAHEAD
 };
 class Node {
-    public:
+public:
     char name;
     std::unique_ptr<Node> left;
     std::unique_ptr<Node> right;
