@@ -65,7 +65,6 @@ std::vector<std::set<int>> MDFA::split(const std::set<int>& group, DFA& dfa) con
     return result;
 }
 void MDFA::buildMFDA(DFA& dfa) {
-    this->states = Pi.size();
     this->tableTransitionMDFA.clear();
     this->finalPi.clear();
     this->startMDFA = findGroupInd(dfa.startDFA, Pi);
@@ -130,7 +129,8 @@ bool MDFA::search(const std::string& str) {
     }
     return false;
 }
-MDFA MDFA::diff(MDFA& A, MDFA &B) {
+
+MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
     MDFA dif;
     std::set<char> alphabet = A.alphabet;
     alphabet.insert(B.alphabet.begin(), B.alphabet.end());
@@ -147,7 +147,10 @@ MDFA MDFA::diff(MDFA& A, MDFA &B) {
         int newId = pairs[currPair];
         bool aFinal = currPair.first != -1 && A.finalPi.contains(currPair.first);
         bool bFinal = currPair.second != -1 && B.finalPi.contains(currPair.second);
-        if (aFinal && !bFinal) {
+        bool pick = false;
+        if (d) pick = aFinal && !bFinal;
+        else pick = bFinal && aFinal;
+        if (pick) {
             dif.finalPi.insert(newId);
         }
         for (char c : alphabet) {
@@ -167,7 +170,6 @@ MDFA MDFA::diff(MDFA& A, MDFA &B) {
             dif.tableTransitionMDFA[newId][c] = pairs[nextPair];
         }
     }
-    dif.states = nextId;
     dif.alphabet = alphabet;
     return dif;
 }
@@ -179,7 +181,7 @@ void MDFA::dumpDOT(std::string filename) {
     out << "node [shape = circle];" << std::endl;
     out << "node [shape = none, label=\"\"]; start_node;" << std::endl;
     out << "start_node -> " << this->startMDFA << ";" << std::endl;
-    for (int i = 0; i < this->states; ++i) {
+    for (int i = 0; i < Pi.size(); ++i) {
         if (this->finalPi.contains(i)) {
             out << "    " << i << " [shape = doublecircle, label=\"" << i << "\"];" << std::endl;
         } else {

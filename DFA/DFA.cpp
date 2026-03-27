@@ -81,14 +81,14 @@ void DFA::makeComplete(const std::set<char>& alphabet) {
       int trapId = -1;
       int numStates = tableDFA.size();
       for (int i = 0; i < numStates; ++i) {
-            for (char c : alphabet) {
-                  if (c == '$') continue;
-                  if (!transitionTable[i].contains(c)) {
-                        if (trapId == -1) {
-                              trapId = numStates;
-                              for (char a : alphabet) {
-                                    if (a == '$') continue;
-                                    transitionTable[trapId][a] = trapId;
+         for (char c : alphabet) {
+           if (c == '$') continue;
+           if (!transitionTable[i].contains(c)) {
+              if (trapId == -1) {
+                  trapId = numStates;
+                     for (char a : alphabet) {
+                         if (a == '$') continue;
+                              transitionTable[trapId][a] = trapId;
                               }
                         }
                         transitionTable[i][c] = trapId;

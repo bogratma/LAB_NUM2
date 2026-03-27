@@ -22,7 +22,7 @@ int main() {
         regex.automata.dumpDOT("mdfa1.dot");
         regex1.automata.dumpDOT("mdfa2.dot");
         MDFA mdfa;
-        mdfa = mdfa.diff(regex.automata,regex1.automata);
+        mdfa = mdfa.diff(regex.automata,regex1.automata,false);
         mdfa.dumpDOT("mdfa3.dot");
     }
     catch (const std::exception& e) {

@@ -13,7 +13,6 @@ public:
     std::vector<std::set<int>> Pi;
     std::set<int> finalPi;
     std::set<char> alphabet;
-    int states{};
     int startMDFA{};
 
     void minimize( DFA& dfa);
@@ -23,7 +22,7 @@ public:
     void dumpDOT(std::string filename);
     bool match(const std::string&);
     bool search(const std::string&);
-    MDFA diff(MDFA&, MDFA&);
+    MDFA diff(MDFA&, MDFA&,bool);
 };
 
 
