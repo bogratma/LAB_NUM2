@@ -84,7 +84,6 @@ std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
     if (j < s.size() && s[j] == ',') {
         m = 0;
         j++;
-
         if (j >= s.size() || !isdigit(s[j]))
             throw std::runtime_error("Invalid {,}");
         n = 0;
