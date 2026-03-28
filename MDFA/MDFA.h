@@ -23,6 +23,9 @@ public:
     bool match(const std::string&);
     bool search(const std::string&);
     void selfMin();
+    std::string toRegex();
+    void initStackEl(std::map<std::pair<int, int>, std::string>& R, int S, int F);
+    std::pair<std::vector<int>, std::vector<int>> getNeighbors(const std::map<std::pair<int, int>, std::string>& R, int k) ;
     MDFA diff(MDFA&, MDFA&,bool);
 };
 
