@@ -16,4 +16,5 @@ add_executable(LAB_NUM2 main.cpp
         MDFA/MDFA.cpp
         MDFA/MDFA.h
         Regex/Regex.cpp
-        Regex/Regex.h)
+        Regex/Regex.h
+        tree/ParserResult.h)

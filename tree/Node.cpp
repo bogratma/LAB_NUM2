@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "ParserResult.h"
 #include "stack"
 
 void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
@@ -78,39 +79,39 @@ std::unique_ptr<Node> useRange(const std::string& s, size_t& i) {
     return rangeRoot;
 }
 std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
-    size_t j = i + 1;
-    int m = 0;
-    int n = -1;
-    if (j < s.size() && s[j] == ',') {
-        m = 0;
+    size_t j= i + 1;
+    int m=0;
+    int n=-1;
+    if (j<s.size() && s[j] == ',') {
+        m=0;
         j++;
-        if (j >= s.size() || !isdigit(s[j]))
+        if (j>=s.size() || !isdigit(s[j]))
             throw std::runtime_error("Invalid {,}");
-        n = 0;
-        while (j < s.size() && isdigit(s[j])) {
-            n = n * 10 + (s[j] - '0');
+        n=0;
+        while (j<s.size() && isdigit(s[j])) {
+            n=n*10 +(s[j] - '0');
             j++;
         }
     }
-    else if (j < s.size() && isdigit(s[j])) {
-        m = 0;
-        while (j < s.size() && isdigit(s[j])) {
-            m = m * 10 + (s[j] - '0');
+    else if (j<s.size() && isdigit(s[j])) {
+        m=0;
+        while (j<s.size() && isdigit(s[j])) {
+            m=m*10+(s[j]-'0');
             j++;
         }
-        if (j < s.size() && s[j] == '}') {
-            n = m;
+        if (j<s.size() && s[j] == '}') {
+            n=m;
         }
-        else if (j < s.size() && s[j] == ',') {
+        else if (j<s.size() && s[j] == ',') {
             j++;
-            if (j < s.size() && isdigit(s[j])) {
-                n = 0;
+            if (j<s.size() && isdigit(s[j])) {
+                n=0;
                 while (j < s.size() && isdigit(s[j])) {
-                    n = n * 10 + (s[j] - '0');
+                    n=n*10+(s[j]-'0');
                     j++;
                 }
             } else {
-                n = -1;
+                n=-1;
             }
         } else {
             throw std::runtime_error("Invalid {m...}");
@@ -119,10 +120,10 @@ std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
     else {
         throw std::runtime_error("Invalid {");
     }
-    if (j >= s.size() || s[j] != '}')
+    if (j>=s.size() || s[j] != '}')
         throw std::runtime_error("No }");
-    i = j;
-    if (n != -1 && m > n)
+    i=j;
+    if (n !=-1 && m>n)
         throw std::runtime_error("Invalid range");
 
     return {m, n};
@@ -175,10 +176,10 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
 
     syms.push(std::move(result));
 }
-std::unique_ptr<Node> Parser(const std::string& s) {
+ParserResult Parser(const std::string& s) {
+    ParserResult result;
     std::stack<char> op;
     std::stack<std::unique_ptr<Node>> sym;
-
     bool prev = false;
     for (size_t i = 0; i < s.length(); ++i) {
         char c = s[i];
@@ -188,6 +189,19 @@ std::unique_ptr<Node> Parser(const std::string& s) {
             if (i+1>=s.length()) throw std::runtime_error("End with %");
             flag = true;
             c = s[++i];
+        }
+        if (!flag && c == '/') {
+            while (!op.empty()) {
+                if (op.top() == '(') throw std::runtime_error("Unclosed ( before /");
+                useBinary(sym, op);
+            }
+            result.mainTree = std::move(sym.top());
+            sym.pop();
+            if (i + 1 < s.length()) {
+                result.lookahead = s.substr(i + 1);
+                result.hasLookahead = true;
+            }
+            return result;
         }
 
         bool curPrev = flag || getPrior(s[i]) == 0;
@@ -246,10 +260,14 @@ std::unique_ptr<Node> Parser(const std::string& s) {
         if (op.top()=='(') {throw std::runtime_error("Extra (");}
         useBinary(sym, op);
     }
-
+    if (!sym.empty()) {
+        result.mainTree = std::move(sym.top());
+        sym.pop();
+    }
     if (sym.size() > 1) throw std::runtime_error("Unprocessed symbols!");
-    return sym.empty() ? nullptr : std::move(sym.top());
+    return result;
 }
+
 
 int getPrior(char c) {
     switch (c) {

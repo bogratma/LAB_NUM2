@@ -182,7 +182,37 @@ void MDFA::selfMin() {
     temp.transitionTable = this->tableTransitionMDFA;
     this->minimize(temp);
 }
-
+int MDFA::matchPrefLen(const std::string& s) {
+    int currentState = startMDFA;
+    int lastFinalLength = finalPi.contains(currentState) ? 0 : -1;
+    for (int i = 0; i < s.length(); ++i) {
+        char c = s[i];
+        if (!tableTransitionMDFA[currentState].contains(c)) break;
+        currentState = tableTransitionMDFA[currentState][c];
+        if (finalPi.contains(currentState)) {
+            lastFinalLength = i + 1;
+        }
+    }
+    return lastFinalLength;
+}
+bool MDFA::matchPref(const std::string& s) {
+    return matchPrefLen(s) != -1;
+}
+std::vector<int> MDFA::getAllFinInd(const std::string& s) {
+    std::vector<int> indices;
+    int currentState = startMDFA;
+    for (int i = 0; i < s.length(); ++i) {
+        char c = s[i];
+        if (!tableTransitionMDFA[currentState].contains(c)) {
+            break;
+        }
+        currentState = tableTransitionMDFA[currentState][c];
+        if (finalPi.contains(currentState)) {
+            indices.push_back(i + 1);
+        }
+    }
+    return indices;
+}
 void MDFA::dumpDOT(const std::string& filename) {
     std::ofstream out(filename);
     out << "digraph MDFA {" << std::endl;

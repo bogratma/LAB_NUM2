@@ -24,6 +24,10 @@ public:
     bool search(const std::string&);
     void selfMin();
     MDFA diff(MDFA&, MDFA&,bool);
+    int matchPrefLen(const std::string& s) ;
+    bool matchPref(const std::string& s) ;
+    std::vector<int> getAllFinInd(const std::string& s) ;
+
 };
 
 

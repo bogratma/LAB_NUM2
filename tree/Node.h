@@ -7,6 +7,9 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+
+#include "ParserResult.h"
+
 enum Type {
     STAR,
     OR,
@@ -31,7 +34,7 @@ public:
     }
 };
 
-std::unique_ptr<Node> Parser(const std::string& s);
+ParserResult Parser(const std::string& s);
 int getPrior(char c);
 void postOrder(Node*,std::vector<Node*>&);
 void drawTree(Node*, std::string);

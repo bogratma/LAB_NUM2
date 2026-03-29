@@ -12,19 +12,10 @@ int main() {
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;
         Regex regex(regular);
-
-      //std::string regular1;
-        //std::cout<<"Enter regular expression2: "<<std::endl;
-       //std::cin >> regular1;
-        //Regex regex1(regular1);
         regex.comp();
-      // regex1.comp();
-        regex.automata.dumpDOT("mdfa1.dot");
-        std::cout<<"Regular is: "<<regex.automata.toRegex()<<std::endl;
-        /*regex1.automata.dumpDOT("mdfa2.dot");
-        MDFA mdfa;
-        mdfa = mdfa.diff(regex.automata,regex1.automata,true);
-        mdfa.dumpDOT("mdfa3.dot");*/
+        std::cout<<"Enter string: "<<std::endl;
+        std::cin >> regular;
+        std::cout<<regex.match(regular);
     }
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';

@@ -20,7 +20,7 @@ class DFA {
     std::set<char> alphabet{};
     DFA(){};
     std::set<State*> epsClosure(State*,NFA&);
-    std::set<State*> epsClosure(std::set<State*>, NFA&) ;
+    std::set<State*> epsClosure(const std::set<State*>&, NFA&) ;
     void process(NFA&);
     std::set<State*> Tmove(const std::set<State*>&,NFA&,char);
     void DFS(State* cur,NFA& nfa, std::set<State*>& states) ;

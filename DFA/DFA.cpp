@@ -48,7 +48,7 @@ std::set<State*> DFA::epsClosure(State* p, NFA& nfa) {
       DFS(p,nfa,epsClose);
       return epsClose;
 }
-std::set<State*> DFA::epsClosure(std::set<State*> s, NFA& nfa) {
+std::set<State*> DFA::epsClosure(const std::set<State*>& s, NFA& nfa) {
       std::set<State*> epsClose;
       for (const auto f : s)
             DFS(f,nfa,epsClose);
