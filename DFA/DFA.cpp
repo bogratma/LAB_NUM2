@@ -25,18 +25,9 @@ void DFA::process(NFA& nfa) {
             for (const char c : nfa.alphabet) {
                   if (c=='$') continue;
                   alphabet.insert(c);
-                  std::set<State*> nexts;
-                  for (auto f: s) {
-                        auto range = nfa.table.equal_range(std::make_pair(f,c));
-                        for (auto it = range.first; it != range.second; ++it) {
-                              nexts.insert(it->second);
-                        }
-                  }
+                  std::set<State*> nexts = Tmove(s,nfa,c);
                   if (nexts.empty()) continue;
-                  std::set<State*> closureGroup;
-                  for (const auto cl: nexts) {
-                        DFS(cl,nfa,closureGroup);
-                  }
+                  std::set<State*> closureGroup = epsClosure(nexts,nfa);
                   if (!tableDFA.contains(closureGroup)) {
                         int v = id++;
                         tableDFA[closureGroup] = v;
@@ -55,6 +46,12 @@ void DFA::process(NFA& nfa) {
 std::set<State*> DFA::epsClosure(State* p, NFA& nfa) {
       std::set<State*> epsClose;
       DFS(p,nfa,epsClose);
+      return epsClose;
+}
+std::set<State*> DFA::epsClosure(std::set<State*> s, NFA& nfa) {
+      std::set<State*> epsClose;
+      for (const auto f : s)
+            DFS(f,nfa,epsClose);
       return epsClose;
 }
 

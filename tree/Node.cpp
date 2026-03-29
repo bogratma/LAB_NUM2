@@ -147,7 +147,7 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
         return chain;
     };
     std::unique_ptr<Node> result = nullptr;
-    if (n != -1) {
+    if (n != -1) { //верхняя граница
         for (int k = m; k <= n; ++k) {
             auto branch = makeChain(k);
             if (!result) {
