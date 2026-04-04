@@ -51,7 +51,23 @@ public:
             for (int i = points.size() - 1; i >= 0; --i) {
                 const int pos = points[i];
                 std::string tail = s.substr(pos);
-                if (lookaheadAutomata.matchPref(tail)) {
+                if (lookaheadAutomata.match(tail)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (points.empty()) return false;
+        return points.back() == s.length();
+    }
+    bool search(const std::string& s) {
+        if (!is_compiled) comp();
+        const std::vector<int> points = mainAutomata.getAllFinInd(s);
+        if (has_lookahead) {
+            for (int i = points.size() - 1; i >= 0; --i) {
+                const int pos = points[i];
+                std::string tail = s.substr(pos);
+                if (lookaheadAutomata.search(tail)) {
                     return true;
                 }
             }

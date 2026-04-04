@@ -4,6 +4,7 @@
 
 #ifndef LAB_NUM2_MDFA_H
 #define LAB_NUM2_MDFA_H
+#include "Product.h"
 #include "../DFA/DFA.h"
 
 
@@ -23,10 +24,11 @@ public:
     bool match(const std::string&);
     bool search(const std::string&);
     void selfMin();
-    MDFA diff(MDFA&, MDFA&,bool);
-    int matchPrefLen(const std::string& s) ;
-    bool matchPref(const std::string& s) ;
+
+     [[nodiscard]] static MDFA diff(const MDFA&, const MDFA&, bool);
     std::vector<int> getAllFinInd(const std::string& s) ;
+    [[nodiscard]] static Product getProduct(const MDFA& A,const MDFA& B) ;
+     [[nodiscard]]static bool equal(const MDFA& A,const MDFA& B) ;
 
 };
 

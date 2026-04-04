@@ -130,7 +130,32 @@ bool MDFA::search(const std::string& str) {
     return false;
 }
 
-MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
+
+void MDFA::selfMin() {
+    DFA temp;
+    temp.startDFA =this->startMDFA;
+    temp.finalDFA =this->finalPi;
+    temp.alphabet = this->alphabet;
+    temp.transitionTable = this->tableTransitionMDFA;
+    this->minimize(temp);
+}
+
+std::vector<int> MDFA::getAllFinInd(const std::string& s) {
+    std::vector<int> indices;
+    int currentState = startMDFA;
+    for (int i = 0; i < s.length(); ++i) {
+        char c = s[i];
+        if (!tableTransitionMDFA[currentState].contains(c)) {
+            break;
+        }
+        currentState = tableTransitionMDFA[currentState][c];
+        if (finalPi.contains(currentState)) {
+            indices.push_back(i + 1);
+        }
+    }
+    return indices;
+}
+/*MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
     MDFA dif;
     std::set<char> alphabet = A.alphabet;
     alphabet.insert(B.alphabet.begin(), B.alphabet.end());
@@ -145,8 +170,8 @@ MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
         std::pair<int, int> currPair = q.front();
         q.pop();
         int newId = pairs[currPair];
-        bool aFinal = currPair.first != -1 && A.finalPi.contains(currPair.first);
-        bool bFinal = currPair.second != -1 && B.finalPi.contains(currPair.second);
+        const bool aFinal = currPair.first != -1 && A.finalPi.contains(currPair.first);
+        const bool bFinal = currPair.second != -1 && B.finalPi.contains(currPair.second);
         bool pick = false;
         if (d) pick = aFinal && !bFinal;
         else pick = bFinal && aFinal;
@@ -173,45 +198,68 @@ MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
     dif.alphabet = alphabet;
     dif.selfMin();
     return dif;
-}
-void MDFA::selfMin() {
-    DFA temp;
-    temp.startDFA =this->startMDFA;
-    temp.finalDFA =this->finalPi;
-    temp.alphabet = this->alphabet;
-    temp.transitionTable = this->tableTransitionMDFA;
-    this->minimize(temp);
-}
-int MDFA::matchPrefLen(const std::string& s) {
-    int currentState = startMDFA;
-    int lastFinalLength = finalPi.contains(currentState) ? 0 : -1;
-    for (int i = 0; i < s.length(); ++i) {
-        char c = s[i];
-        if (!tableTransitionMDFA[currentState].contains(c)) break;
-        currentState = tableTransitionMDFA[currentState][c];
-        if (finalPi.contains(currentState)) {
-            lastFinalLength = i + 1;
+}*/
+Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
+    Product product;
+    product.alphabet = A.alphabet;
+    product.alphabet.insert(B.alphabet.begin(),B.alphabet.end());
+    std::queue<std::pair<int,int>> q;
+    const std::pair startPair = {A.startMDFA,B.startMDFA};
+    product.pairs[startPair] = 0;
+    q.push(startPair);
+    int nextId = 1;
+    while (!q.empty()) {
+        auto currPair = q.front();
+        q.pop();
+        int curId = product.pairs[currPair];
+        for (char c: product.alphabet ) {
+            int nextA = -1;
+            int nextB = -1;
+            if (currPair.first!=-1 && A.tableTransitionMDFA.contains(currPair.first)
+                && A.tableTransitionMDFA.at(currPair.first).contains(c)) {
+                nextA = A.tableTransitionMDFA.at(currPair.first).at(c);
+            }
+            if (currPair.second!=-1 && B.tableTransitionMDFA.contains(currPair.first)
+                && B.tableTransitionMDFA.at(currPair.second).contains(c)) {
+                nextB = B.tableTransitionMDFA.at(currPair.first).at(c);
+            }
+            std::pair nextPair = {nextA,nextB};
+            if (!product.pairs.contains(nextPair)) {
+                product.pairs[nextPair] = nextId++;
+                q.push(nextPair);
+            }
+            product.transitions[curId][c] =product.pairs[nextPair];
         }
     }
-    return lastFinalLength;
+    return  product;
 }
-bool MDFA::matchPref(const std::string& s) {
-    return matchPrefLen(s) != -1;
-}
-std::vector<int> MDFA::getAllFinInd(const std::string& s) {
-    std::vector<int> indices;
-    int currentState = startMDFA;
-    for (int i = 0; i < s.length(); ++i) {
-        char c = s[i];
-        if (!tableTransitionMDFA[currentState].contains(c)) {
-            break;
-        }
-        currentState = tableTransitionMDFA[currentState][c];
-        if (finalPi.contains(currentState)) {
-            indices.push_back(i + 1);
+
+MDFA MDFA::diff(const MDFA& A,  const MDFA& B, const bool d)  {
+    Product product = getProduct(A, B);
+    MDFA res;
+    res.alphabet =product.alphabet;
+    res.tableTransitionMDFA = product.transitions;
+    res.startMDFA = 0;
+    for (auto const& [pair,id] : product.pairs) {
+            const bool aFinal = pair.first != -1 && A.finalPi.contains(pair.first) ;
+            const bool bFinal = pair.second != -1 && B.finalPi.contains(pair.second);
+        if (d) {
+            if (aFinal && !bFinal) {
+                res.finalPi.insert(id);
+            }
+        }else {
+            if (aFinal && bFinal) {
+                res.finalPi.insert(id);
+            }
         }
     }
-    return indices;
+    res.selfMin();
+    return res;
+}
+bool MDFA::equal(const MDFA& A,const MDFA& B) {
+    const MDFA diff1 = diff(A,B,true);
+    const MDFA diff2 = diff(B,A,true);
+    return diff1.finalPi.empty() && diff2.finalPi.empty();
 }
 void MDFA::dumpDOT(const std::string& filename) {
     std::ofstream out(filename);
