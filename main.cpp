@@ -20,6 +20,8 @@ int main() {
         Regex regex2(second);
         regex2.comp();
         std::cout<<MDFA::equal(regex.mainAutomata,regex2.mainAutomata)<<std::endl;
+
+
         /*std::string regular; difference
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;

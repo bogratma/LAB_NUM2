@@ -292,7 +292,6 @@ void postOrder(Node* root,std::vector<Node*>& names) {
     postOrder(root->right.get(),names);
     names.push_back(root);
 }
-
 void writeNodes(Node* root, std::ostream& out) {
     if (!root) return;
     writeNodes(root->left.get(), out);

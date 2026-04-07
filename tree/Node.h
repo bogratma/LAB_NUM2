@@ -38,6 +38,7 @@ ParserResult Parser(const std::string& s);
 int getPrior(char c);
 void postOrder(Node*,std::vector<Node*>&);
 void drawTree(Node*, std::string);
+std::pair<int, int> parseBounds(const std::string& s, size_t& i);
 
 
 #endif //LAB_NUM2_NODE_H

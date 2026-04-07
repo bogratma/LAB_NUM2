@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <queue>
+#include <ranges>
 
 std::set<int> getFinal(const DFA& dfa) {
     return dfa.finalDFA;
@@ -155,50 +156,7 @@ std::vector<int> MDFA::getAllFinInd(const std::string& s) {
     }
     return indices;
 }
-/*MDFA MDFA::diff(MDFA& A, MDFA &B, bool d) {
-    MDFA dif;
-    std::set<char> alphabet = A.alphabet;
-    alphabet.insert(B.alphabet.begin(), B.alphabet.end());
-    std::map<std::pair<int, int>, int> pairs;
-    std::queue<std::pair<int, int>> q;
-    const std::pair startPair = {A.startMDFA, B.startMDFA};
-    pairs[startPair] = 0;
-    dif.startMDFA = 0;
-    q.push(startPair);
-    int nextId = 1;
-    while (!q.empty()) {
-        std::pair<int, int> currPair = q.front();
-        q.pop();
-        int newId = pairs[currPair];
-        const bool aFinal = currPair.first != -1 && A.finalPi.contains(currPair.first);
-        const bool bFinal = currPair.second != -1 && B.finalPi.contains(currPair.second);
-        bool pick = false;
-        if (d) pick = aFinal && !bFinal;
-        else pick = bFinal && aFinal;
-        if (pick) {
-            dif.finalPi.insert(newId);
-        }
-        for (char c : alphabet) {
-            int nextA = -1;
-            if (currPair.first != -1 && A.tableTransitionMDFA.contains(currPair.first) && A.tableTransitionMDFA.at(currPair.first).contains(c)) {
-                nextA = A.tableTransitionMDFA.at(currPair.first).at(c);
-            }
-            int nextB = -1;
-            if (currPair.second != -1 && B.tableTransitionMDFA.contains(currPair.second) && B.tableTransitionMDFA.at(currPair.second).contains(c)) {
-                nextB = B.tableTransitionMDFA.at(currPair.second).at(c);
-            }
-            std::pair nextPair = {nextA, nextB};
-            if (!pairs.contains(nextPair)) {
-                pairs[nextPair] = nextId++;
-                q.push(nextPair);
-            }
-            dif.tableTransitionMDFA[newId][c] = pairs[nextPair];
-        }
-    }
-    dif.alphabet = alphabet;
-    dif.selfMin();
-    return dif;
-}*/
+
 Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
     Product product;
     product.alphabet = A.alphabet;
@@ -221,7 +179,7 @@ Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
             }
             if (currPair.second!=-1 && B.tableTransitionMDFA.contains(currPair.first)
                 && B.tableTransitionMDFA.at(currPair.second).contains(c)) {
-                nextB = B.tableTransitionMDFA.at(currPair.first).at(c);
+                nextB = B.tableTransitionMDFA.at(currPair.second).at(c);
             }
             std::pair nextPair = {nextA,nextB};
             if (!product.pairs.contains(nextPair)) {
@@ -259,7 +217,33 @@ MDFA MDFA::diff(const MDFA& A,  const MDFA& B, const bool d)  {
 bool MDFA::equal(const MDFA& A,const MDFA& B) {
     const MDFA diff1 = diff(A,B,true);
     const MDFA diff2 = diff(B,A,true);
-    return diff1.finalPi.empty() && diff2.finalPi.empty();
+    return diff1.isEmpty() && diff2.isEmpty();
+}
+
+bool MDFA::isEmpty() const {
+    if (finalPi.empty()) {
+        return true;
+    }
+    std::queue<int> q;
+    std::set<int> visited;
+    q.push(startMDFA);
+    visited.insert(startMDFA);
+    while (!q.empty()) {
+        int curr = q.front();
+        q.pop();
+        if (finalPi.contains(curr)) {
+            return false;
+        }
+        if (tableTransitionMDFA.contains(curr)) {
+            for (const auto &nextState: tableTransitionMDFA.at(curr) | std::views::values) {
+                if (nextState != -1 && !visited.contains(nextState)) {
+                    visited.insert(nextState);
+                    q.push(nextState);
+                }
+            }
+        }
+    }
+    return true;
 }
 void MDFA::dumpDOT(const std::string& filename) {
     std::ofstream out(filename);

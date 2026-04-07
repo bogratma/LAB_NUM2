@@ -15,7 +15,15 @@ public:
     std::set<int> finalPi;
     std::set<char> alphabet;
     int startMDFA{};
-
+    [[nodiscard]] const std::map<int, std::map<char, int>>& getTable() const {
+        return tableTransitionMDFA;
+    }
+    [[nodiscard]] int getStart() const { return startMDFA; }
+    [[nodiscard]] const std::set<int>& getFinals() const { return finalPi; }
+    void setStart(int id) { startMDFA = id; }
+    void addFinal(int id) { finalPi.insert(id); }
+    void setAlphabet(const std::set<char>& alpha) { alphabet = alpha; }
+    void addTransition(int from, char sym, int to) {tableTransitionMDFA[from][sym] = to;}
     void minimize( DFA& dfa);
     bool checkGroup(DFA& dfa,const std::set<int>& group) const;
     std::vector<std::set<int>> split(const std::set<int>& group,DFA& dfa) const;
@@ -29,7 +37,7 @@ public:
     std::vector<int> getAllFinInd(const std::string& s) ;
     [[nodiscard]] static Product getProduct(const MDFA& A,const MDFA& B) ;
      [[nodiscard]]static bool equal(const MDFA& A,const MDFA& B) ;
-
+    [[nodiscard]] bool isEmpty() const;
 };
 
 
