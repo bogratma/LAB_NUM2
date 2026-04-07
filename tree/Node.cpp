@@ -294,18 +294,25 @@ void postOrder(Node* root,std::vector<Node*>& names) {
 }
 void writeNodes(Node* root, std::ostream& out) {
     if (!root) return;
-    writeNodes(root->left.get(), out);
-    writeNodes(root->right.get(), out);
-    out<< "\""<<root<<"\" [label=\""<<root->name<<"\", shape=circle];\n";
+    auto id = reinterpret_cast<uintptr_t>(root);
+    std::string label;
+    if (root->name == '\0') {
+        label = "$";
+    } else {
+        label = std::string(1, root->name);
+    }
+    out << "\"node_" << id << "\" [label=\"" << label << "\", shape=circle];" << std::endl;
     if (root->left) {
-        out<<"\""<<root <<"\" -> \"" <<root->left.get()<<"\";\n";
+        auto leftId = reinterpret_cast<uintptr_t>(root->left.get());
+        out << "\"node_" << id << "\" -> \"node_" << leftId << "\";" << std::endl;
     }
     if (root->right) {
-        out<<"\""<<root<<"\" -> \"" <<root->right.get()<<"\";\n";
+        auto rightId = reinterpret_cast<uintptr_t>(root->right.get());
+        out << "\"node_" << id << "\" -> \"node_" << rightId << "\";" << std::endl;
     }
 }
 
-void drawTree(Node* root, std::string filename = "tree") {
+void drawTree(Node* root, const std::string& filename = "tree") {
     std::string dotFile = filename + ".dot";
     std::string pngFile = filename + ".png";
     std::ofstream out(dotFile);

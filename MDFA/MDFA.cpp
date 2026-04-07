@@ -144,6 +144,9 @@ void MDFA::selfMin() {
 std::vector<int> MDFA::getAllFinInd(const std::string& s) {
     std::vector<int> indices;
     int currentState = startMDFA;
+    if (finalPi.contains(currentState)) {
+        indices.push_back(0);
+    }
     for (int i = 0; i < s.length(); ++i) {
         char c = s[i];
         if (!tableTransitionMDFA[currentState].contains(c)) {
