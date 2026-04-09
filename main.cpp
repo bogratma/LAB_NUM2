@@ -36,8 +36,13 @@ int main() {
         regex.comp();
         MDFA dif = MDFA::diff(regex.mainAutomata,regex1.mainAutomata,false);
         dif.dumpDOT("dif.dot");*/
+        ParserResult root = Parser("(a|b)(!f)");
+        NFA nfa;
+        nfa.compile(root.mainTree.get());
+        nfa.dumpDot("cap.dot");
     }
     catch (const std::exception& e) {
         std::cout << e.what() << '\n';
     }
+
 }

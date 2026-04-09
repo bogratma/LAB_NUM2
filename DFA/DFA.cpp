@@ -60,7 +60,7 @@ std::set<State*> DFA::Tmove(const std::set<State*>& group, NFA& nfa, char c) {
       for (auto s : group) {
             auto range = nfa.table.equal_range(std::make_pair(s,c));
             for (auto it = range.first; it != range.second; ++it) {
-                  next.insert(it->second);
+                  next.insert(it->second.to);
             }
       }
             return next;
@@ -71,7 +71,7 @@ void DFA::DFS(State* cur, NFA& nfa, std::set<State*>& states) {
       states.insert(cur);
       auto it = nfa.table.equal_range(std::make_pair(cur,'$'));
       for (auto t = it.first; t != it.second; ++t) {
-            DFS(t->second,nfa,states);
+            DFS(t->second.to,nfa,states);
       }
 }
 void DFA::makeComplete(const std::set<char>& alphabet) {

@@ -7,8 +7,6 @@
 #include <map>
 #include <string>
 #include <utility>
-
-
 class State {
     public:
     static int name;
