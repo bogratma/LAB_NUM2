@@ -9,7 +9,7 @@
 
 int main() {
     try {
-        std::string regular;
+        /*std::string regular;
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;
         Regex regex(regular);
@@ -19,10 +19,10 @@ int main() {
         std::cout<<second<<std::endl;
         Regex regex2(second);
         regex2.comp();
-        std::cout<<MDFA::equal(regex.mainAutomata,regex2.mainAutomata)<<std::endl;
+        std::cout<<MDFA::equal(regex.mainAutomata,regex2.mainAutomata)<<std::endl;*/
 
 
-        /*std::string regular; difference
+        /*std::string regular; //difference
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;
         Regex regex(regular);
@@ -34,7 +34,7 @@ int main() {
 
         regex1.comp();
         regex.comp();
-        MDFA dif = MDFA::diff(regex.mainAutomata,regex1.mainAutomata,true);
+        MDFA dif = MDFA::diff(regex.mainAutomata,regex1.mainAutomata,false);
         dif.dumpDOT("dif.dot");*/
     }
     catch (const std::exception& e) {

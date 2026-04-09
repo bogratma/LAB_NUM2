@@ -180,7 +180,7 @@ Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
                 && A.tableTransitionMDFA.at(currPair.first).contains(c)) {
                 nextA = A.tableTransitionMDFA.at(currPair.first).at(c);
             }
-            if (currPair.second!=-1 && B.tableTransitionMDFA.contains(currPair.first)
+            if (currPair.second!=-1 && B.tableTransitionMDFA.contains(currPair.second)
                 && B.tableTransitionMDFA.at(currPair.second).contains(c)) {
                 nextB = B.tableTransitionMDFA.at(currPair.second).at(c);
             }

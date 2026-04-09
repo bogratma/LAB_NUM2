@@ -217,7 +217,7 @@ TEST_CASE("DFA2") {
         CHECK(dfa.startDFA == 0);
         CHECK(!dfa.finalDFA.empty());
     }
-    SECTION("Complete DFA (Trap state)") {
+    SECTION("Complete DFA") {
         auto res = Parser("a");
         NFA nfa;
         nfa.compile(res.mainTree.get());
@@ -231,7 +231,7 @@ TEST_CASE("DFA2") {
         }
     }
 }
-TEST_CASE("MDFA Minimization Logic", "[mdfa]") {
+TEST_CASE("MDFA Minimization Logic") {
     DFA dfa;
     dfa.alphabet = {'a'};
     dfa.transitionTable[0]['a'] = 1;
@@ -245,7 +245,7 @@ TEST_CASE("MDFA Minimization Logic", "[mdfa]") {
         CHECK(mdfa.getTable().size() == 1);
     }
 }
-TEST_CASE("MDFA Set Operations", "[mdfa]") {
+TEST_CASE("MDFA Set Operations") {
     MDFA mdfaA;
     MDFA mdfaB;
     SECTION("Equality check") {
@@ -313,7 +313,7 @@ TEST_CASE("Regex Basic and Lookahead") {
         CHECK(re.match("ab") == true);
         CHECK(re.match("ac") == false);
     }
-    SECTION("Lookahead with longer tails") {
+    SECTION("Lookahead tails") {
         Regex re("a/bc");
         CHECK(re.match("abc") == true);
         CHECK(re.match("ab") == false);
@@ -384,13 +384,13 @@ TEST_CASE("State Elimination") {
 }
 
 TEST_CASE("Empty") {
-    SECTION("Regex: Matching empty pattern") {
+    SECTION("Matching empty pattern") {
         Regex re("");
         CHECK(re.match("") == false);
         CHECK(re.match("a") == false);
     }
 
-    SECTION("MDFA: Internal structure for epsilon") {
+    SECTION("MDFA") {
         MDFA mdfa;
         mdfa.setStart(0);
         mdfa.addFinal(0);
@@ -399,7 +399,7 @@ TEST_CASE("Empty") {
         CHECK(mdfa.getAllFinInd("") == expected);
     }
 
-    SECTION("StateElim: Back to Regex") {
+    SECTION("Back to Regex") {
         MDFA mdfa;
         mdfa.setStart(0);
         mdfa.addFinal(0);
@@ -408,8 +408,8 @@ TEST_CASE("Empty") {
         CHECK(res.find('$') != std::string::npos);
     }
 }
-TEST_CASE("Case: Strictly Empty Language (Empty Set)", "[empty_set]") {
-    SECTION("MDFA with no path to final") {
+TEST_CASE("Empty Language") {
+    SECTION("MDFA") {
         MDFA mdfa;
         mdfa.setStart(0);
         mdfa.addFinal(1);
@@ -417,12 +417,69 @@ TEST_CASE("Case: Strictly Empty Language (Empty Set)", "[empty_set]") {
         CHECK(mdfa.match("") == false);
         CHECK(mdfa.match("a") == false);
     }
-    SECTION("StateElim for Empty Set") {
+    SECTION("StateElim for Empty") {
         MDFA mdfa;
         mdfa.setStart(0);
         mdfa.addFinal(1);
         StateElim elim;
         std::string res = elim.getRegex(mdfa);
         CHECK(res == "");
+    }
+}
+TEST_CASE("MDFA Product Logic") {
+    SECTION("Intersection") {
+        Regex re("ab|bc");
+        Regex r1("ab|cd");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata, r1.mainAutomata, false);
+        CHECK(res.match("ab") == true);
+        CHECK(res.match("b") == false);
+        CHECK(res.isEmpty() == false);
+    }
+
+    SECTION("Intersection with Empty") {
+        Regex re("");
+        Regex r1("a");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, false);
+        CHECK(res.isEmpty() == true);
+        CHECK(res.match("a") == false);
+    }
+
+    SECTION("Intersection Empty") {
+        Regex re("");
+        Regex r1("");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, false);
+        CHECK(res.isEmpty() == true);
+        CHECK(res.match("") == false);
+    }
+
+    SECTION("Difference") {
+        Regex re("ab|bc");
+        Regex r1("ab|cd");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata, r1.mainAutomata, true);
+        CHECK(res.match("bc") == true);
+        CHECK(res.match("ab") == false);
+        CHECK(res.isEmpty() == false);
+    }
+
+    SECTION("Difference with Empty") {
+        Regex re("");
+        Regex r1("a");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, true);
+        CHECK(res.isEmpty() == true);
+        CHECK(res.match("a") == false);
+    }
+
+    SECTION("Difference Empty") {
+        Regex re("");
+        Regex r1("");
+        re.comp(); r1.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, true);
+        CHECK(res.isEmpty() == true);
+        CHECK(res.match("") == false);
     }
 }
