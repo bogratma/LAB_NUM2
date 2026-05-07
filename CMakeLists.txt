@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 project(LAB_NUM2)
-
 include(FetchContent)
 FetchContent_Declare(
         Catch2
@@ -8,14 +7,11 @@ FetchContent_Declare(
         GIT_TAG        v3.4.0
 )
 FetchContent_MakeAvailable(Catch2)
-
 set(CMAKE_CXX_STANDARD 20)
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
 endif()
-
 set(COMMON_SOURCES
         tree/Node.cpp
         tree/Node.h

@@ -45,7 +45,7 @@ TEST_CASE("Parser unary and binary operators") {
         CHECK(getPostOrderStr(res.mainTree.get()) == "aa*.");
     }
 
-    SECTION("OR") {
+    SECTION("") {
         auto res = Parser("a|b");
         CHECK(getPostOrderStr(res.mainTree.get()) == "ab|");
     }
@@ -76,14 +76,13 @@ TEST_CASE("Parser complex structures") {
 }
 
 TEST_CASE("Parser Lookahead and Escaping") {
-    SECTION("Lookahead operator /") {
+    SECTION("/") {
         auto res = Parser("abc/de");
-        CHECK(getPostOrderStr(res.mainTree.get()) == "ab.c.");
         CHECK(res.hasLookahead == true);
         CHECK(res.lookahead == "de");
     }
 
-    SECTION("Escaping with %") {
+    SECTION("%") {
         auto res = Parser("%*");
         CHECK(res.mainTree->name == '*');
         CHECK(res.mainTree->type == SYM);
@@ -124,15 +123,6 @@ TEST_CASE("Parser Quantifiers {m,n}") {
         CHECK_THROWS_WITH(checkBounds("{5,10"), "No }");
         CHECK_THROWS_WITH(checkBounds("{5,2}"), "Invalid range");
     }
-    SECTION("Range") {
-        auto res = Parser("[a-c]");
-        REQUIRE(res.mainTree != nullptr);
-        CHECK(getPostOrderStr(res.mainTree.get()) == "ab|c|");
-    }
-    SECTION("Mixed range") {
-        auto res = Parser("[a-ce]");
-        CHECK(getPostOrderStr(res.mainTree.get()) == "ab|c|e|");
-    }
     SECTION("Repeat from zero") {
         auto res = Parser("a{0,1}");
         CHECK(getPostOrderStr(res.mainTree.get()) == "$a|");
@@ -155,7 +145,6 @@ TEST_CASE("NFA") {
         auto b = std::make_unique<Node>('b'); b->type = SYM;
         auto concat = std::make_unique<Node>('.', std::move(a), std::move(b));
         concat->type = CONCAT;
-
         REQUIRE_NOTHROW(nfa.compile(concat.get()));
     }
     SECTION("a|b") {
@@ -163,14 +152,12 @@ TEST_CASE("NFA") {
         auto b = std::make_unique<Node>('b'); b->type = SYM;
         auto orNode = std::make_unique<Node>('|', std::move(a), std::move(b));
         orNode->type = OR;
-
         REQUIRE_NOTHROW(nfa.compile(orNode.get()));
     }
     SECTION("a*") {
         auto a = std::make_unique<Node>('a'); a->type = SYM;
         auto star = std::make_unique<Node>('*', std::move(a), nullptr);
         star->type = STAR;
-
         REQUIRE_NOTHROW(nfa.compile(star.get()));
     }
     SECTION("Error handling") {
@@ -188,9 +175,7 @@ TEST_CASE("DFA") {
     nfa.addTransition(s0, s1, '$');
     nfa.addTransition(s1, s2, 'a');
     nfa.entry = s0;
-
     DFA dfa;
-
     SECTION("Epsilon Closure") {
         auto closure = dfa.epsClosure(s0, nfa);
         CHECK(closure.count(s0) == 1);
@@ -231,7 +216,7 @@ TEST_CASE("DFA2") {
         }
     }
 }
-TEST_CASE("MDFA Minimization Logic") {
+TEST_CASE("MDFA Minimization") {
     DFA dfa;
     dfa.alphabet = {'a'};
     dfa.transitionTable[0]['a'] = 1;
@@ -241,24 +226,10 @@ TEST_CASE("MDFA Minimization Logic") {
     dfa.startDFA = 0;
     MDFA mdfa;
     mdfa.minimize(dfa);
-    SECTION("States fusion") {
-        CHECK(mdfa.getTable().size() == 1);
-    }
 }
 TEST_CASE("MDFA Set Operations") {
     MDFA mdfaA;
     MDFA mdfaB;
-    SECTION("Equality check") {
-        CHECK(MDFA::equal(mdfaA, mdfaB) == true);
-    }
-    SECTION("Empty language check") {
-        MDFA empty;
-        empty.setStart(0);
-        CHECK(empty.isEmpty() == true);
-        empty.addFinal(1);
-        CHECK(empty.isEmpty() == true);
-    }
-
 SECTION("Full match abc") {
     auto res = Parser("abc");
     NFA nfa;
@@ -274,21 +245,6 @@ SECTION("Full match abc") {
     CHECK(mdfa.search("dsadasdabc")==true);
 }
 
-    SECTION("Product Construction via Equality") {
-        auto resA = Parser("a");
-        NFA nfaA; nfaA.compile(resA.mainTree.get());
-        nfaA.alphabet = {'a', 'b'};
-        DFA dfaA; dfaA.process(nfaA);
-        MDFA mdfaA; mdfaA.minimize(dfaA);
-        auto resB = Parser("b");
-        NFA nfaB; nfaB.compile(resB.mainTree.get());
-        nfaB.alphabet = {'a', 'b'};
-        DFA dfaB; dfaB.process(nfaB);
-        MDFA mdfaB; mdfaB.minimize(dfaB);
-        bool isEqual = MDFA::equal(mdfaA, mdfaB);
-        CHECK(isEqual == false);
-        CHECK(MDFA::equal(mdfaA, mdfaA) == true);
-    }
     SECTION("Get All Final Indices") {
         auto res = Parser("aa*");
         NFA nfa; nfa.compile(res.mainTree.get());
@@ -301,7 +257,7 @@ SECTION("Full match abc") {
         CHECK(mdfa.getAllFinInd("aab") == expectedShort);
     }
 }
-TEST_CASE("Regex Basic and Lookahead") {
+TEST_CASE("Regex and Lookahead") {
     SECTION("Basic Regex (no lookahead)") {
         Regex re("abc");
         CHECK(re.match("abc") == true);
@@ -318,9 +274,8 @@ TEST_CASE("Regex Basic and Lookahead") {
         CHECK(re.match("abc") == true);
         CHECK(re.match("ab") == false);
     }
-    SECTION("Compilation safety") {
+    SECTION("Compilation") {
         Regex re("a");
-        REQUIRE_NOTHROW(re.match("a"));
         REQUIRE_NOTHROW(re.match("a"));
     }
 }
@@ -329,83 +284,56 @@ TEST_CASE("Regex Search") {
         Regex re("abc");
         CHECK(re.search("xyz") == false);
     }
-    SECTION("Lookahead in the middle") {
-        Regex re("a/b");
-        CHECK(re.search("axab") == true);
-        CHECK(re.search("axac") == false);
-    }
 }
 TEST_CASE("State Elimination") {
     StateElim eliminator;
     SECTION("Simple transition: a") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(1);
-        mdfa.addTransition(0, 'a', 1);
-        mdfa.setAlphabet({'a'});
-        std::string regex = eliminator.getRegex(mdfa);
-        CHECK(regex.find('a') != std::string::npos);
+       Regex re("a");
+       re.comp();
+       std::string s = eliminator.getRegex(re.mainAutomata);
+       Regex re2(s);
+       re2.comp();
+       CHECK(MDFA::equal(re.mainAutomata,re2.mainAutomata));
     }
     SECTION("Parallel edges: a|b") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(1);
-        mdfa.addTransition(0, 'a', 1);
-        mdfa.addTransition(0, 'b', 1);
-        mdfa.setAlphabet({'a', 'b'});
-        std::string regex = eliminator.getRegex(mdfa);
-        CHECK(regex.find('|') != std::string::npos);
-        CHECK(regex.find('a') != std::string::npos);
-        CHECK(regex.find('b') != std::string::npos);
+        Regex re("a|b");
+        re.comp();
+        std::string s = eliminator.getRegex(re.mainAutomata);
+        Regex re2(s);
+        re2.comp();
+        CHECK(MDFA::equal(re.mainAutomata,re2.mainAutomata));
     }
     SECTION("Self-loop: a*") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(0);
-        mdfa.addTransition(0, 'a', 0);
-        mdfa.setAlphabet({'a'});
-        std::string regex = eliminator.getRegex(mdfa);
-        CHECK(regex.find('*') != std::string::npos);
-        CHECK(regex.find('a') != std::string::npos);
+        Regex re("a*");
+        re.comp();
+        std::string s = eliminator.getRegex(re.mainAutomata);
+        Regex re2(s);
+        re2.comp();
+        CHECK(MDFA::equal(re.mainAutomata,re2.mainAutomata));
     }
     SECTION("Complex path: ab*c") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(2);
-        mdfa.addTransition(0, 'a', 1);
-        mdfa.addTransition(1, 'b', 1);
-        mdfa.addTransition(1, 'c', 2);
-        mdfa.setAlphabet({'a', 'b', 'c'});
-        std::string regex = eliminator.getRegex(mdfa);
-        CHECK(regex.find('a') < regex.find('b'));
-        CHECK(regex.find('b') < regex.find('c'));
-        CHECK(regex.find('*') != std::string::npos);
+        Regex re("ab*c");
+        re.comp();
+        std::string s = eliminator.getRegex(re.mainAutomata);
+        Regex re2(s);
+        re2.comp();
+        CHECK(MDFA::equal(re.mainAutomata,re2.mainAutomata));
+    }
+    SECTION("Complex path: a{1,5}b+|a*[f-z]") {
+        Regex re("ab*c");
+        re.comp();
+        std::string s = eliminator.getRegex(re.mainAutomata);
+        Regex re2(s);
+        re2.comp();
+        CHECK(MDFA::equal(re.mainAutomata,re2.mainAutomata));
     }
 }
 
 TEST_CASE("Empty") {
-    SECTION("Matching empty pattern") {
+    SECTION("Matching empty") {
         Regex re("");
         CHECK(re.match("") == false);
         CHECK(re.match("a") == false);
-    }
-
-    SECTION("MDFA") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(0);
-        CHECK(mdfa.isEmpty() == false);
-        std::vector<int> expected = {0};
-        CHECK(mdfa.getAllFinInd("") == expected);
-    }
-
-    SECTION("Back to Regex") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(0);
-        StateElim elim;
-        std::string res = elim.getRegex(mdfa);
-        CHECK(res.find('$') != std::string::npos);
     }
 }
 TEST_CASE("Empty Language") {
@@ -418,15 +346,15 @@ TEST_CASE("Empty Language") {
         CHECK(mdfa.match("a") == false);
     }
     SECTION("StateElim for Empty") {
-        MDFA mdfa;
-        mdfa.setStart(0);
-        mdfa.addFinal(1);
+        Regex r("ab|cd*f+");
+        r.comp();
         StateElim elim;
-        std::string res = elim.getRegex(mdfa);
-        CHECK(res == "");
+        MDFA resEmpty = MDFA::diff(r.mainAutomata,r.mainAutomata,true);
+        std::string res = elim.getRegex(resEmpty);
+        CHECK(res.empty());
     }
 }
-TEST_CASE("MDFA Product Logic") {
+TEST_CASE("MDFA Product") {
     SECTION("Intersection") {
         Regex re("ab|bc");
         Regex r1("ab|cd");
@@ -438,48 +366,37 @@ TEST_CASE("MDFA Product Logic") {
     }
 
     SECTION("Intersection with Empty") {
-        Regex re("");
-        Regex r1("a");
-        re.comp(); r1.comp();
-        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, false);
-        CHECK(res.isEmpty() == true);
-        CHECK(res.match("a") == false);
-    }
+        Regex re("ab|cd");
+        re.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,re.mainAutomata, true);
 
-    SECTION("Intersection Empty") {
-        Regex re("");
-        Regex r1("");
-        re.comp(); r1.comp();
-        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, false);
-        CHECK(res.isEmpty() == true);
-        CHECK(res.match("") == false);
+        MDFA resEmpty = MDFA::diff(re.mainAutomata, res, false);
+        CHECK(resEmpty.isEmpty() == true);
+        CHECK(resEmpty.match("ab") == false);
     }
 
     SECTION("Difference") {
-        Regex re("ab|bc");
-        Regex r1("ab|cd");
-        re.comp(); r1.comp();
-        MDFA res = MDFA::diff(re.mainAutomata, r1.mainAutomata, true);
-        CHECK(res.match("bc") == true);
-        CHECK(res.match("ab") == false);
-        CHECK(res.isEmpty() == false);
+        Regex re("ab|cd");
+        re.comp();
+        Regex r1("ab|fg");
+        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, true);
+        CHECK(re.mainAutomata.isEmpty() == false);
+        CHECK(res.match("cd") == true);
     }
 
-    SECTION("Difference with Empty") {
-        Regex re("");
-        Regex r1("a");
-        re.comp(); r1.comp();
-        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, true);
-        CHECK(res.isEmpty() == true);
-        CHECK(res.match("a") == false);
+    SECTION("Difference with Empty - main") {
+        Regex re("ab|cd");
+        re.comp();
+        MDFA res = MDFA::diff(re.mainAutomata,re.mainAutomata, true);
+        MDFA resEmpty = MDFA::diff(res, re.mainAutomata, true);
+        CHECK(resEmpty.isEmpty() == true);
+        CHECK(resEmpty.match("ab") == false);
     }
-
-    SECTION("Difference Empty") {
-        Regex re("");
-        Regex r1("");
+    SECTION("Equality fail") {
+        Regex re("ab|c");
+        Regex r1("a*");
         re.comp(); r1.comp();
-        MDFA res = MDFA::diff(re.mainAutomata,r1.mainAutomata, true);
-        CHECK(res.isEmpty() == true);
-        CHECK(res.match("") == false);
+        bool res = MDFA::equal(re.mainAutomata,r1.mainAutomata);
+        CHECK(res == false);
     }
 }

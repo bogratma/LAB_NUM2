@@ -3,6 +3,13 @@
 //
 
 #include "StateElim.h"
+std::string concat(const std::string& a, const std::string& b) {
+    if (a == "$") return b;
+    if (b == "$") return a;
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+    return a + b;
+}
 void StateElim::init(const MDFA& mdfa) {
     table.clear();
     for (auto const& [from, moves] : mdfa.tableTransitionMDFA) {
@@ -28,7 +35,10 @@ void StateElim::init(const MDFA& mdfa) {
 }
 void StateElim::eliminateState(int q) {
     std::string loop;
-    std::string s = table[q][q];
+    std::string s;
+    if (table[q].contains(q)) {
+        s = table[q][q];
+    }
     if (s != "$" && !s.empty()) {
         loop = "(" + s + ")*";
     }
@@ -41,11 +51,11 @@ void StateElim::eliminateState(int q) {
         const std::string to_q = table[p][q];
         for (auto const& [r, from_q_regex] : table[q]) {
             if (r == q) continue;
-            const std::string path = table[p][q]+loop+from_q_regex;
+            std::string path = concat(concat(to_q, loop), from_q_regex);
             if (table[p].contains(r)) {
                 table[p][r] = "(" + table[p][r] + "|" + path + ")";
             } else {
-                table[p][r] = path;
+                table[p][r] = path.empty() ? "$" : path;
             }
         }
     }
