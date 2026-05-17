@@ -23,7 +23,7 @@ public:
     std::set<char> alphabet;
     std::unordered_multimap<std::pair<State*,char>,State*,reHash> table;
     State* entry = nullptr;
-
+    int groupCount = 0;
     State* create() {
         states.push_back(std::make_unique<State>());
         return states.back().get();
@@ -31,6 +31,9 @@ public:
     void addTransition(State* f, State* s, char c) {
         alphabet.emplace(c);
         table.emplace(std::make_pair(f, c), s);
+    }
+    void addEpsilon(State* f, State* s, std::vector<Tag> tags={}, int prior=0) {
+        f->epsTrans.push_back({s,prior,std::move(tags)});
     }
     void compile(Node* root);
     void dumpDot(const std::string& filename) {
@@ -44,22 +47,39 @@ public:
         out << "    node [fontname=\"Arial\", fontsize=12];\n";
         for (const auto& s : states) {
             std::string shape = s->isAcceptable ? "doublecircle" : "circle";
-            out << "    \"" << s->id << "\" [shape=" << shape << ", width=0.6, fixedsize=true];\n";
+            out << "    \"" << s->id << "\" [shape=" << shape
+                << ", width=0.6, fixedsize=true];\n";
         }
-        if (!states.empty()) {
-            out << "    node [shape=none, width=0]; start_node [label=\"\"];\n";
-            out << "    start_node -> \"" << entry->id << "\";\n";
-        }
-
+        out << "    node [shape=none, width=0]; start_node [label=\"\"];\n";
+        out << "    start_node -> \"" << entry->id << "\";\n";
         for (auto const& [key, target] : table) {
             State* from = key.first;
             char symbol = key.second;
-            std::string label = (symbol == '$') ? "&epsilon;" : std::string(1, symbol);
+            std::string label = std::string(1, symbol);
             out << "    \"" << from->id << "\" -> \"" << target->id
                 << "\" [label=\"" << label << "\"];\n";
         }
+        for (const auto& s : states) {
+            for (const auto& t : s->epsTrans) {
+                std::string label = "&epsilon;";
+                if (!t.tags.empty()) {
+                    label += " [";
+                    for (int i = 0; i < (int)t.tags.size(); i++) {
+                        int reg = t.tags[i].reg;
+                        int g   = reg / 2;
+                        bool isStart = (reg % 2 == 0);
+                        label += "r" + std::to_string(reg) +
+                                 "(g" + std::to_string(g) +
+                                 (isStart ? "_start" : "_end") + ")";
+                        if (i + 1 < (int)t.tags.size()) label += ",";
+                    }
+                    label += "]";
+                }
+                out << "    \"" << s->id << "\" -> \"" << t.to->id
+                    << "\" [label=\"" << label << "\", style=dashed];\n";
+            }
+        }
         out << "}\n";
-        out.close();
     }
 
 };

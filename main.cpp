@@ -22,7 +22,7 @@ int main() {
         std::cout<<MDFA::equal(regex.mainAutomata,regex2.mainAutomata)<<std::endl;*/
 
 
-        std::string regular; //difference
+        /*std::string regular; //difference
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;
         Regex regex(regular);
@@ -34,7 +34,13 @@ int main() {
         regex1.comp();
         regex.comp();
         MDFA dif = MDFA::diff(regex.mainAutomata,regex1.mainAutomata,false);
-        dif.dumpDOT("dif.dot");
+        dif.dumpDOT("dif.dot");*/
+        std::string s ;
+        std::getline(std::cin,s);
+        ParserResult s1 = Parser(s);
+        NFA nfa;
+        nfa.compile(s1.mainTree.get());
+        nfa.dumpDot( "nfa.dot");
 
     }
     catch (const std::exception& e) {

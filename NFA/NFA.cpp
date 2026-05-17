@@ -26,10 +26,10 @@ postOrder(root,nodes);
             top.end->isAcceptable = false;
             bottom.end->isAcceptable = false;
             end->isAcceptable=true;
-            addTransition(start,top.start,'$');
-            addTransition(start,bottom.start,'$');
-            addTransition(top.end,end,'$');
-            addTransition(bottom.end,end,'$');
+            addEpsilon(start,top.start,{},0);
+            addEpsilon(start,bottom.start,{},1);
+            addEpsilon(top.end,end);
+            addEpsilon(bottom.end,end);
             base.emplace(start,end);
         }
         else if (c->type==STAR) {
@@ -41,9 +41,9 @@ postOrder(root,nodes);
             const Chunk top = base.top();
             top.end->isAcceptable = false;
             base.pop();
-            addTransition(start, top.start,'$');
-            addTransition(top.end,top.start,'$');
-            addTransition(top.end,end,'$');
+            addEpsilon(start, top.start);
+            addEpsilon(top.end,top.start);
+            addEpsilon(top.end,end);
             base.emplace(start,end);
         }
         else if (c->type==CONCAT) {
@@ -53,8 +53,22 @@ postOrder(root,nodes);
             Chunk first = base.top();
             base.pop();
             first.end->isAcceptable = false;
-            addTransition(first.end,second.start,'$');
+            addEpsilon(first.end, second.start);
             base.emplace(first.start,second.end);
+        }
+        else if (c->type == GROUP) {
+            if (base.empty()) throw std::runtime_error("Base is empty!");
+
+            Chunk inner = base.top();
+            base.pop();
+            int g = c->capGroup;
+            State* s = create();
+            State* e = create();
+            inner.end->isAcceptable = false;
+            e->isAcceptable = true;
+            addEpsilon(s, inner.start, {{2*g}},0);
+            addEpsilon(inner.end, e,   {{2*g+1}},0);
+            base.emplace(s, e);
         }
         else {
             State* start = create();

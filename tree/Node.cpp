@@ -179,6 +179,7 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
 ParserResult Parser(const std::string& s) {
     ParserResult result;
     std::stack<char> op;
+    std::stack<int> groupCap;
     std::stack<std::unique_ptr<Node>> sym;
     bool prev = false;
     for (size_t i = 0; i < s.length(); ++i) {
@@ -212,7 +213,20 @@ ParserResult Parser(const std::string& s) {
                 op.push('.');
         }
 
-        if (!flag && c=='('){ op.push(c);prev=false;}
+        if (!flag && c=='(') {
+            bool isDef = (i+1 < s.length() && s[i+1]=='!');
+            if (isDef) {
+                i++;
+                op.push(c);
+                groupCap.push(-1);
+            }else{
+                op.push(c);
+                int gid = result.groupCount++;
+                groupCap.push(gid);
+                result.hasCapGroup = true;
+            }
+            prev=false;
+        }
 
         else if (!flag && c==')') {
             bool correct = false;
@@ -225,6 +239,16 @@ ParserResult Parser(const std::string& s) {
             }
             if (!correct) throw std::runtime_error("Extra )");
             op.pop();
+
+            int gid = groupCap.top();
+            groupCap.pop();
+            if (gid>=0) {
+                auto in = std::move(sym.top());
+                auto grNode = std::make_unique<Node>('G',std::move(in),nullptr);
+                grNode->type = GROUP;
+                grNode->capGroup = gid;
+                sym.push(std::move(grNode));
+            }
             prev=true;
         }
         else if(!flag && (c=='*' || c=='+')) {

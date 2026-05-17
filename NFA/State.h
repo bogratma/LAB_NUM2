@@ -7,13 +7,24 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
+class State;
 
+struct Tag {
+    int reg;
+};
+struct Eps {
+    State* to;
+    int prior = 0;
+    std::vector<Tag> tags;
+};
 class State {
     public:
     static int name;
     int id;
     bool isAcceptable = false;
+    std::vector<Eps> epsTrans;
     State(){id = name++;}
 };
 
