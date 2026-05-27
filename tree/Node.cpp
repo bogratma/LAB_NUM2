@@ -180,6 +180,7 @@ ParserResult Parser(const std::string& s) {
     ParserResult result;
     std::stack<char> op;
     std::stack<std::unique_ptr<Node>> sym;
+    std::stack<int> groupStack;
     bool prev = false;
     for (size_t i = 0; i < s.length(); ++i) {
         char c = s[i];
@@ -212,7 +213,19 @@ ParserResult Parser(const std::string& s) {
                 op.push('.');
         }
 
-        if (!flag && c=='('){ op.push(c);prev=false;}
+        if (!flag && c=='(') {
+            bool deny = (i+1<s.length() && s[i+1]=='!');
+            if (deny) {
+                i++;
+                op.push(c);
+                groupStack.push(-1);
+            }else {
+                op.push(c);
+                groupStack.push(result.groupCount++);
+                result.hasLookahead = true;
+            }
+            prev=false;
+        }
 
         else if (!flag && c==')') {
             bool correct = false;
@@ -225,6 +238,17 @@ ParserResult Parser(const std::string& s) {
             }
             if (!correct) throw std::runtime_error("Extra )");
             op.pop();
+
+            int gid = groupStack.top();
+            groupStack.pop();
+            if (gid>=0) {
+                auto nod = std::move(sym.top());
+                sym.pop();
+                auto group = std::make_unique<Node>('G', std::move(nod), nullptr);
+                group->type=GROUP;
+                group->capture=gid;
+                sym.push(std::move(group));
+            }
             prev=true;
         }
         else if(!flag && (c=='*' || c=='+')) {
@@ -296,19 +320,37 @@ void writeNodes(Node* root, std::ostream& out) {
     if (!root) return;
     auto id = reinterpret_cast<uintptr_t>(root);
     std::string label;
-    if (root->name == '\0') {
-        label = "$";
-    } else {
-        label = std::string(1, root->name);
+    switch (root->type) {
+        case GROUP:
+            label = "G(" + std::to_string(root->capture) + ")";
+            break;
+        case BACKREF:
+            label = "\\" + std::to_string(root->capture + 1);
+            break;
+        case STAR:   label = "*"; break;
+        case OR:     label = "|"; break;
+        case CONCAT: label = "."; break;
+        case SYM:
+            label = (root->name == '$') ? "ε"
+                  : (root->name == '\0') ? "?"
+                  : std::string(1, root->name);
+            break;
+        default:
+            label = std::string(1, root->name);
     }
-    out << "\"node_" << id << "\" [label=\"" << label << "\", shape=circle];" << std::endl;
+    std::string shape = (root->type == GROUP) ? "rectangle" : "circle";
+    out << "\"node_" << id << "\" [label=\"" << label
+        << "\", shape=" << shape << "];\n";
+
     if (root->left) {
         auto leftId = reinterpret_cast<uintptr_t>(root->left.get());
-        out << "\"node_" << id << "\" -> \"node_" << leftId << "\";" << std::endl;
+        out << "\"node_" << id << "\" -> \"node_" << leftId << "\";\n";
+        writeNodes(root->left.get(), out);
     }
     if (root->right) {
         auto rightId = reinterpret_cast<uintptr_t>(root->right.get());
-        out << "\"node_" << id << "\" -> \"node_" << rightId << "\";" << std::endl;
+        out << "\"node_" << id << "\" -> \"node_" << rightId << "\";\n";
+        writeNodes(root->right.get(), out);
     }
 }
 

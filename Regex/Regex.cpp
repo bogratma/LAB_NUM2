@@ -3,6 +3,7 @@
 //
 
 #include "Regex.h"
+#include <iostream>
 void Regex::comp() {
     if (is_compiled) return;
     compileToMDFA(mainRoot.get(), mainAutomata, "main");

@@ -26,24 +26,24 @@ postOrder(root,nodes);
             top.end->isAcceptable = false;
             bottom.end->isAcceptable = false;
             end->isAcceptable=true;
-            addTransition(start,top.start,'$');
-            addTransition(start,bottom.start,'$');
-            addTransition(top.end,end,'$');
-            addTransition(bottom.end,end,'$');
+            addEps(start,top.start,{});
+            addEps(start,bottom.start,{});
+            addEps(top.end,end,{});
+            addEps(bottom.end,end,{});
             base.emplace(start,end);
         }
         else if (c->type==STAR) {
             State* start = create();
             State* end = create();
             end->isAcceptable=true;
-            addTransition(start,end,'$');
+            addEps(start,end,{});
             if (base.empty()) throw std::runtime_error("Base is empty!");
             const Chunk top = base.top();
             top.end->isAcceptable = false;
             base.pop();
-            addTransition(start, top.start,'$');
-            addTransition(top.end,top.start,'$');
-            addTransition(top.end,end,'$');
+            addEps(start, top.start,{});
+            addEps(top.end,top.start,{});
+            addEps(top.end,end,{});
             base.emplace(start,end);
         }
         else if (c->type==CONCAT) {
@@ -53,8 +53,19 @@ postOrder(root,nodes);
             Chunk first = base.top();
             base.pop();
             first.end->isAcceptable = false;
-            addTransition(first.end,second.start,'$');
+            addEps(first.end,second.start,{});
             base.emplace(first.start,second.end);
+        }
+        else if (c->type == GROUP) {
+            State* start = create();
+            State* end   = create();
+            end->isAcceptable = true;
+            const Chunk top = base.top(); base.pop();
+            top.end->isAcceptable = false;
+            int reg = c->capture * 2;
+            addEps(start,   top.start, {{reg}});
+            addEps(top.end, end,       {{reg + 1}});
+            base.emplace(start, end);
         }
         else {
             State* start = create();

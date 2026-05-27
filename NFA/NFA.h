@@ -32,6 +32,9 @@ public:
         alphabet.emplace(c);
         table.emplace(std::make_pair(f, c), s);
     }
+    void addEps(State* f, State* s, std::vector<Tag> tags, int p = 0) {
+        f->eps.push_back({s,p,std::move(tags)});
+    }
     void compile(Node* root);
     void dumpDot(const std::string& filename) {
         std::ofstream out(filename);
@@ -44,24 +47,43 @@ public:
         out << "    node [fontname=\"Arial\", fontsize=12];\n";
         for (const auto& s : states) {
             std::string shape = s->isAcceptable ? "doublecircle" : "circle";
-            out << "    \"" << s->id << "\" [shape=" << shape << ", width=0.6, fixedsize=true];\n";
+            out << "    \"" << s->id << "\" [shape=" << shape
+                << ", width=0.6, fixedsize=true];\n";
         }
-        if (!states.empty()) {
-            out << "    node [shape=none, width=0]; start_node [label=\"\"];\n";
-            out << "    start_node -> \"" << entry->id << "\";\n";
-        }
-
+        out << "    node [shape=none, width=0]; start_node [label=\"\"];\n";
+        out << "    start_node -> \"" << entry->id << "\";\n";
         for (auto const& [key, target] : table) {
-            State* from = key.first;
-            char symbol = key.second;
-            std::string label = (symbol == '$') ? "&epsilon;" : std::string(1, symbol);
+            State* from  = key.first;
+            char  symbol = key.second;
             out << "    \"" << from->id << "\" -> \"" << target->id
-                << "\" [label=\"" << label << "\"];\n";
+                << "\" [label=\"" << std::string(1, symbol) << "\"];\n";
+        }
+        for (const auto& s : states) {
+            for (const auto& t : s->eps) {
+                std::string label = "&epsilon;";
+                if (!t.tags.empty()) {
+                    label += " [";
+                    for (int i = 0; i < (int)t.tags.size(); i++) {
+                        int reg = t.tags[i].reg;
+                        int g   = reg / 2;
+                        label  += "r" + std::to_string(reg)
+                               +  "(g" + std::to_string(g)
+                               +  (reg % 2 == 0 ? "_start" : "_end") + ")";
+                        if (i + 1 < (int)t.tags.size()) label += ",";
+                    }
+                    label += "]";
+                }
+                out << "    \"" << s->id << "\" -> \"" << t.to->id
+                    << "\" [label=\"" << label << "\", style=dashed];\n";
+            }
+            for (const auto& bt : s->backs) {
+                out << "    \"" << s->id << "\" -> \"" << bt.to->id
+                    << "\" [label=\"\\\\" << (bt.group + 1)
+                    << "\", style=dotted, color=red];\n";
+            }
         }
         out << "}\n";
-        out.close();
     }
-
 };
 
 #endif //LAB_NUM2_NFA_H

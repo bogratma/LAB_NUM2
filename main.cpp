@@ -26,15 +26,16 @@ int main() {
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;
         Regex regex(regular);
+        regex.comp();
 
-        std::string regular1;
+        /*std::string regular1;
         std::cout<<"Enter regular expression2: "<<std::endl;
         std::cin >> regular1;
         Regex regex1(regular1);
         regex1.comp();
         regex.comp();
         MDFA dif = MDFA::diff(regex.mainAutomata,regex1.mainAutomata,false);
-        dif.dumpDOT("dif.dot");
+        dif.dumpDOT("dif.dot");*/
 
     }
     catch (const std::exception& e) {
