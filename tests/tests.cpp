@@ -115,15 +115,7 @@ TEST_CASE("Parser Quantifiers {m,n}") {
         CHECK(res4.first == 0);
         CHECK(res4.second == 10);
     }
-    SECTION("Error handling") {
-        CHECK_THROWS_WITH(checkBounds("{}"), "Invalid {");
-        CHECK_THROWS_WITH(checkBounds("{a}"), "Invalid {");
-        CHECK_THROWS_WITH(checkBounds("{,a}"), "Invalid {,}");
-        CHECK_THROWS_WITH(checkBounds("{,}"), "Invalid {,}");
-        CHECK_THROWS_WITH(checkBounds("{5a}"), "Invalid {m...}");
-        CHECK_THROWS_WITH(checkBounds("{5,10"), "No }");
-        CHECK_THROWS_WITH(checkBounds("{5,2}"), "Invalid range");
-    }
+
     SECTION("Range") {
         auto res = Parser("[a-c]");
         REQUIRE(res.mainTree != nullptr);

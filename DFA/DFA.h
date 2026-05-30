@@ -18,7 +18,7 @@ class DFA {
 
     std::set<int> finalDFA{};
     std::set<char> alphabet{};
-    DFA(){};
+    DFA()= default;
     std::set<State*> epsClosure(State*,NFA&);
     std::set<State*> epsClosure(const std::set<State*>&, NFA&) ;
     void process(NFA&);

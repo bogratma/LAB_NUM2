@@ -25,7 +25,7 @@ void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     syms.push(std::move(binaryNode));
 
 }
-void useUnary(std::stack<std::unique_ptr<Node>>& syms,char c) {
+void useUnary(std::stack<std::unique_ptr<Node>>& syms, char c) {
     if (syms.empty()) throw std::runtime_error("Unary op error");
     if (c=='+') {
         if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
@@ -79,53 +79,40 @@ std::unique_ptr<Node> useRange(const std::string& s, size_t& i) {
     return rangeRoot;
 }
 std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
-    size_t j= i + 1;
-    int m=0;
-    int n=-1;
-    if (j<s.size() && s[j] == ',') {
-        m=0;
+    size_t j = i + 1;
+    auto readInt = [&]() -> int {
+        if (j >= s.size() || !isdigit(s[j]))
+            throw std::runtime_error("Expected digit");
+        int val = 0;
+        while (j < s.size() && isdigit(s[j]))
+            val = val * 10 + (s[j++] - '0');
+        return val;
+    };
+    auto expect = [&](char c) {
+        if (j >= s.size() || s[j] != c)
+            throw std::runtime_error(std::string("Expected '") + c + "'");
         j++;
-        if (j>=s.size() || !isdigit(s[j]))
-            throw std::runtime_error("Invalid {,}");
-        n=0;
-        while (j<s.size() && isdigit(s[j])) {
-            n=n*10 +(s[j] - '0');
+    };
+    int m, n;
+    if (j < s.size() && s[j] == ',') {
+        // {,n}
+        j++;
+        m = 0;
+        n = readInt();
+    } else {
+        //{m} {m,} {m,n}
+        m = readInt();
+        if (j < s.size() && s[j] == ',') {
             j++;
-        }
-    }
-    else if (j<s.size() && isdigit(s[j])) {
-        m=0;
-        while (j<s.size() && isdigit(s[j])) {
-            m=m*10+(s[j]-'0');
-            j++;
-        }
-        if (j<s.size() && s[j] == '}') {
-            n=m;
-        }
-        else if (j<s.size() && s[j] == ',') {
-            j++;
-            if (j<s.size() && isdigit(s[j])) {
-                n=0;
-                while (j < s.size() && isdigit(s[j])) {
-                    n=n*10+(s[j]-'0');
-                    j++;
-                }
-            } else {
-                n=-1;
-            }
+            n = (j < s.size() && isdigit(s[j])) ? readInt() : -1; //{m,}
         } else {
-            throw std::runtime_error("Invalid {m...}");
+            n = m; //{m}
         }
     }
-    else {
-        throw std::runtime_error("Invalid {");
-    }
-    if (j>=s.size() || s[j] != '}')
-        throw std::runtime_error("No }");
-    i=j;
-    if (n !=-1 && m>n)
-        throw std::runtime_error("Invalid range");
-
+    expect('}');
+    if (n != -1 && m > n)
+        throw std::runtime_error("Invalid range: m > n");
+    i = j - 1;
     return {m, n};
 }
 void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, size_t& i) {
@@ -164,7 +151,6 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
         result = makeChain(m);
         auto star = std::make_unique<Node>('*', base->clone(), nullptr);
         star->type = STAR;
-
         if (m == 0) {
             result = std::move(star);
         } else {
@@ -173,7 +159,6 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
             result = std::move(concat);
         }
     }
-
     syms.push(std::move(result));
 }
 ParserResult Parser(const std::string& s) {
@@ -289,7 +274,6 @@ int getPrior(char c) {
         default: return 0;
     }
 }
-
 void postOrder(Node* root,std::vector<Node*>& names) {
     if (root==nullptr) return;
     postOrder(root->left.get(),names);
