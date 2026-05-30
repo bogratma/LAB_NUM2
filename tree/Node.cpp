@@ -179,7 +179,6 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
 ParserResult Parser(const std::string& s) {
     ParserResult result;
     std::stack<char> op;
-    int groupCounter = 0;
     std::stack<std::unique_ptr<Node>> sym;
     bool prev = false;
     for (size_t i = 0; i < s.length(); ++i) {
@@ -214,38 +213,24 @@ ParserResult Parser(const std::string& s) {
         }
 
         if (!flag && c == '(') {
-            if (i + 1 < s.length() && s[i + 1] == '!') {
-                op.push('!');
-                i++;
-            } else {
-                op.push('(');
-            }
+            op.push('(');
             prev = false;
         }
-        else if (!flag && c == ')') {
+
+        else if (!flag && c==')') {
             bool correct = false;
             while (!op.empty()) {
-                if (op.top() == '(' || op.top() == '!') {
-                    correct = true;
+                if (op.top()=='(') {
+                    correct=true;
                     break;
                 }
                 useBinary(sym, op);
             }
             if (!correct) throw std::runtime_error("Extra )");
-            char openingType = op.top();
             op.pop();
-            auto content = std::move(sym.top());
-            sym.pop();
-            if (openingType == '(') {
-                auto groupNode = std::make_unique<Node>('G', std::move(content), nullptr);
-                groupNode->type = GROUP;
-                groupNode->groupId = groupCounter++;
-                sym.push(std::move(groupNode));
-            } else {
-                sym.push(std::move(content));
-            }
-            prev = true;
+            prev=true;
         }
+
         else if(!flag && (c=='*' || c=='+')) {
             useUnary(sym, c);
             prev = true;
@@ -324,10 +309,12 @@ void writeNodes(Node* root, std::ostream& out) {
     if (root->left) {
         auto leftId = reinterpret_cast<uintptr_t>(root->left.get());
         out << "\"node_" << id << "\" -> \"node_" << leftId << "\";" << std::endl;
+        writeNodes(root->left.get(), out);
     }
     if (root->right) {
         auto rightId = reinterpret_cast<uintptr_t>(root->right.get());
         out << "\"node_" << id << "\" -> \"node_" << rightId << "\";" << std::endl;
+        writeNodes(root->right.get(), out);
     }
 }
 

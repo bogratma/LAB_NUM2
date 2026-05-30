@@ -56,17 +56,6 @@ postOrder(root,nodes);
             addTransition(first.end,second.start,'$');
             base.emplace(first.start,second.end);
         }
-        else if (c->type == GROUP) {
-            const Chunk inner = base.top();
-            base.pop();
-            State* gStart = create();
-            State* gEnd = create();
-            gEnd->isAcceptable = true;
-            inner.end->isAcceptable = false;
-            addTransition(gStart, inner.start, '$', c->groupId * 2);
-            addTransition(inner.end, gEnd, '$', c->groupId * 2 + 1);
-            base.emplace(gStart, gEnd);
-        }
         else {
             State* start = create();
             State* end = create();

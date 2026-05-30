@@ -10,10 +10,7 @@
 #include <vector>
 #include "../tree/Node.h"
 #include "State.h"
-struct TransitionTarget {
-    State* to;
-    int tagId = -1;
-};
+
 struct reHash {
     size_t operator()(const std::pair<State*,char>& s) const {
         size_t h = std::hash<State*>{}(s.first);
@@ -24,16 +21,16 @@ class NFA {
 public:
     std::vector<std::unique_ptr<State>> states;
     std::set<char> alphabet;
-    std::unordered_multimap<std::pair<State*, char>, TransitionTarget, reHash> table;
+    std::unordered_multimap<std::pair<State*,char>,State*,reHash> table;
     State* entry = nullptr;
 
     State* create() {
         states.push_back(std::make_unique<State>());
         return states.back().get();
     }
-    void addTransition(State* f, State* s, char c, const int tagId = -1) {
+    void addTransition(State* f, State* s, char c) {
         alphabet.emplace(c);
-        table.emplace(std::make_pair(f, c), TransitionTarget{s, tagId});
+        table.emplace(std::make_pair(f, c), s);
     }
     void compile(Node* root);
     void dumpDot(const std::string& filename) {
@@ -57,13 +54,8 @@ public:
         for (auto const& [key, targetStruct] : table) {
             State* from = key.first;
             char symbol = key.second;
-            State* target = targetStruct.to;
-            int tag = targetStruct.tagId;
-
+            State* target = targetStruct;
             std::string label = (symbol == '$') ? "ε" : std::string(1, symbol);
-            if (tag != -1) {
-                label += " {t" + std::to_string(tag) + "}";
-            }
             out << "    \"" << from->id << "\" -> \"" << target->id
                 << "\" [label=\"" << label << "\"];\n";
         }
