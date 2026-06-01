@@ -14,6 +14,10 @@ void NFA::compile(Node* root) {
     std::vector<Node*> nodes;
     std::stack<Chunk> base;
 postOrder(root,nodes);
+    for (auto* n: nodes ) {
+        if (n->type == SYM && n->name != '$')
+            alphabet.insert(n->name);
+    }
     for (auto c : nodes) {
         if (c->type==OR) {
             State* start = create();
@@ -62,6 +66,19 @@ postOrder(root,nodes);
             addTransition(start,end,c->name);
             end->isAcceptable=true;
             base.emplace(start,end);
+        }
+        else if (c->type == CHARSET) {
+            std::set<char> actual;
+            for (char ch : alphabet)
+                if (!c->charClass.contains(ch))
+                    actual.insert(ch);
+            if (actual.empty()) throw std::runtime_error("Empty charset");
+            State* start = create();
+            State* end   = create();
+            end->isAcceptable = true;
+            for (char ch : actual)
+                addTransition(start, end, ch);
+            base.emplace(start, end);
         }
         else {
             State* start = create();

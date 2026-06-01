@@ -6,6 +6,7 @@
 #define LAB_NUM2_NODE_H
 #include <fstream>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "ParserResult.h"
@@ -16,6 +17,7 @@ enum Type {
     CONCAT,
     SYM,
     EMPTY,
+    CHARSET,
 };
 class Node {
 public:
@@ -23,6 +25,8 @@ public:
     std::unique_ptr<Node> left;
     std::unique_ptr<Node> right;
     Type type;
+    bool negated = false;
+    std::set<char> charClass;
     Node(const char name, std::unique_ptr<Node> left, std::unique_ptr<Node> right):name(name),left(std::move(left)),right(std::move(right)){};
     explicit Node(char name):name(name),left(nullptr),right(nullptr){};
     [[nodiscard]] std::unique_ptr<Node> clone() const {

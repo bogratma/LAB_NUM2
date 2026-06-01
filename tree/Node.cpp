@@ -100,32 +100,62 @@ void useUnary(std::stack<std::unique_ptr<Node>>& syms, char c) {
 std::unique_ptr<Node> useRange(const std::string& s, size_t& i) {
     const size_t close = s.find(']', i);
     if (close == std::string::npos) throw std::runtime_error("No ]");
-    std::unique_ptr<Node> rangeRoot = nullptr;
-    for (size_t j = i + 1; j < close; ++j) {
-        char start = s[j];
-        char end = start;
+    bool negate = false;
+    int start = i+1;
+    if (start<close && s[start]=='^') {
+        negate = true;
+        start++;
+    }
+    std::set<char> chars;
+    for (size_t j = start; j < close; ++j) {
+        char c1 = s[j];
+        char c2 = c1;
         if (j + 2 < close && s[j + 1] == '-') {
-            end = s[j + 2];
+            c2 = s[j + 2];
             j += 2;
         }
-        if (start > end) std::swap(start, end);
-        for (char m = start; m <= end; ++m) {
-            auto nextLeaf = std::make_unique<Node>(m);
-            nextLeaf->type = SYM;
-            if (!rangeRoot) {
-                rangeRoot = std::move(nextLeaf);
-            } else {
-                auto orNode = std::make_unique<Node>('|');
-                orNode->type = OR;
-                orNode->left = std::move(rangeRoot);
-                orNode->right = std::move(nextLeaf);
-                rangeRoot = std::move(orNode);
+        if (c1 > c2) std::swap(c1, c2);
+        for (char m = c1; m <= c2; ++m)
+            chars.insert(m);
+    }
+    if (!negate) {
+        std::unique_ptr<Node> rangeRoot = nullptr;
+        for (size_t j = i + 1; j < close; ++j) {
+            char start = s[j];
+            char end = start;
+            if (j + 2 < close && s[j + 1] == '-') {
+                end = s[j + 2];
+                j += 2;
+            }
+            if (start > end) std::swap(start, end);
+            for (char m = start; m <= end; ++m) {
+                auto nextLeaf = std::make_unique<Node>(m);
+                nextLeaf->type = SYM;
+                if (!rangeRoot) {
+                    rangeRoot = std::move(nextLeaf);
+                } else {
+                    auto orNode = std::make_unique<Node>('|');
+                    orNode->type = OR;
+                    orNode->left = std::move(rangeRoot);
+                    orNode->right = std::move(nextLeaf);
+                    rangeRoot = std::move(orNode);
+                }
             }
         }
+        if (!rangeRoot) throw std::runtime_error("Empty []");
+        i = close;
+        return rangeRoot;
     }
-    if (!rangeRoot) throw std::runtime_error("Empty []");
-    i = close;
-    return rangeRoot;
+    else {
+        auto node = std::make_unique<Node>('\0');
+        node->type      = CHARSET;
+        node->negated   = true;
+        node->charClass = chars;
+        i = close;
+        return node;
+
+    }
+
 }
 std::pair<int,int> parseBounds(const std::string& s, size_t& i) {
     size_t j = i + 1;
