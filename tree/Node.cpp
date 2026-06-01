@@ -9,7 +9,39 @@
 
 #include "ParserResult.h"
 #include "stack"
-
+bool Node::checkInf(const Node* root) {
+    if (!root) return false;
+    if (root->type == STAR) {
+        auto s = root->left.get();
+        if (s->type!=EMPTY) return true;
+    }
+        return checkInf(root->right.get()) || checkInf(root->left.get());
+}
+std::unique_ptr<Node> reverseTree(std::unique_ptr<Node> root) {
+    if (root == nullptr) return nullptr;
+    if (root->type == SYM) {
+        auto f = std::make_unique<Node>(root->name);
+        f->type = SYM;
+        return f;
+    }
+    if (root->type == STAR) {
+        auto k = std::make_unique<Node>(root->name, reverseTree(std::move(root->left)), nullptr);
+        k->type = STAR;
+        return k;
+    }
+    if (root->type == OR) {
+        auto f = std::make_unique<Node>(root->name,reverseTree(std::move(root->left)),reverseTree(std::move(root->right)));
+        f->type = OR;
+        return f;
+    }
+    if (root->type == CONCAT) {
+        auto l = reverseTree(std::move(root->right));
+        auto r = reverseTree(std::move(root->left));
+        auto f = std::make_unique<Node>('.', std::move(l), std::move(r));
+        f->type = CONCAT;
+        return f;
+    }
+}
 void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     if (op.empty()) throw std::runtime_error("Operation stack is empty");
     char c = op.top();
@@ -27,6 +59,23 @@ void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
 }
 void useUnary(std::stack<std::unique_ptr<Node>>& syms, char c) {
     if (syms.empty()) throw std::runtime_error("Unary op error");
+    if (c=='r') {
+        if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operands)");
+        auto aNode = std::move(syms.top());
+        syms.pop();
+        auto n = reverseTree(std::move(aNode));
+        syms.push(std::move(n));
+    }
+    if (c=='?') {
+        if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operands)");
+        auto aNode = std::move(syms.top());
+        auto EpsNode = std::make_unique<Node>('$');
+        EpsNode->type = EMPTY;
+        syms.pop();
+        auto orNode = std::make_unique<Node>('|', std::move(aNode), std::move(EpsNode));
+        orNode->type = OR;
+        syms.push(std::move(orNode));
+    }
     if (c=='+') {
         if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
         auto aNode = std::move(syms.top());
@@ -161,6 +210,7 @@ void useRepeat(std::stack<std::unique_ptr<Node>>& syms, const std::string& s, si
     }
     syms.push(std::move(result));
 }
+
 ParserResult Parser(const std::string& s) {
     ParserResult result;
     std::stack<char> op;
@@ -216,7 +266,7 @@ ParserResult Parser(const std::string& s) {
             prev=true;
         }
 
-        else if(!flag && (c=='*' || c=='+')) {
+        else if(!flag && (c=='*' || c=='+' || c=='r' || c=='?')) {
             useUnary(sym, c);
             prev = true;
         }
@@ -234,6 +284,12 @@ ParserResult Parser(const std::string& s) {
         }
         else if (!flag && c == '{') {
             useRepeat(sym, s, i);
+            prev = true;
+        }
+        else if (!flag && c == '$') {
+            auto eNode = std::make_unique<Node>('$');
+            eNode->type = EMPTY;
+            sym.push(std::move(eNode));
             prev = true;
         }
         else {
@@ -260,6 +316,8 @@ ParserResult Parser(const std::string& s) {
 
 int getPrior(char c) {
     switch (c) {
+        case 'r':
+        case '?':
         case '*':
         case '+':return 3;
         case '.': return 2;

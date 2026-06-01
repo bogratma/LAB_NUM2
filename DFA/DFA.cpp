@@ -41,7 +41,7 @@ void DFA::process(NFA& nfa) {
                   transitionTable[gId][c] = tableDFA[closureGroup];//
             }
       }
-      makeComplete(alphabet);
+      //makeComplete(alphabet);
 }
 std::set<State*> DFA::epsClosure(State* p, NFA& nfa) {
       std::set<State*> epsClose;

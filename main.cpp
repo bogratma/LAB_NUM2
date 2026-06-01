@@ -20,11 +20,15 @@ int main() {
         Regex regex2(second);
         regex2.comp();
         std::cout<<MDFA::equal(regex.mainAutomata,regex2.mainAutomata)<<std::endl;*/
-        std::string n ;
-        std::cin >> n ;
-        Regex regex(n);
+        std::string n1("(b|ab)((a|ba)(b|ab))*");
+        const std::map<char, const std::string> rules = {
+            {'0', "ab"},
+            {'1', "$"}
+        } ;
+        Regex regex(n1);
         regex.comp();
-
+        MDFA f = regex.mainAutomata.invHom(rules);
+        f.dumpDOT("inv.dot");
         /*std::string regular; //difference
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;

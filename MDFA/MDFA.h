@@ -32,6 +32,10 @@ public:
     bool match(const std::string&);
     bool search(const std::string&);
     void selfMin();
+    static bool in(const MDFA& A,const MDFA& B);
+    NFA Reverse();
+    int runSt(int start, const std::string& s) const ;
+    MDFA invHom(const std::map<char, const std::string>& rules) ;
 
      [[nodiscard]] static MDFA diff(const MDFA&, const MDFA&, bool);
     std::vector<int> getAllFinInd(const std::string& s) ;

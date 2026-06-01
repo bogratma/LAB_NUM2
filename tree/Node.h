@@ -15,7 +15,7 @@ enum Type {
     OR,
     CONCAT,
     SYM,
-    LOOKAHEAD,
+    EMPTY,
 };
 class Node {
 public:
@@ -32,8 +32,8 @@ public:
         if (right) newNode->right = right->clone();
         return newNode;
     }
+    bool checkInf(const Node*) ;
 };
-
 ParserResult Parser(const std::string& s);
 int getPrior(char c);
 void postOrder(Node*,std::vector<Node*>&);

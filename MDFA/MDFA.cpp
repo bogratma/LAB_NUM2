@@ -7,7 +7,45 @@
 #include <iostream>
 #include <queue>
 #include <ranges>
+int MDFA::runSt(int start, const std::string& s) const {
+    if (s.empty() || s == "$") {
+        return start;
+    }
+    int cur = start;
+    for (char c : s) {
+        if (tableTransitionMDFA.contains(cur) && tableTransitionMDFA.at(cur).contains(c)) {
+            cur = tableTransitionMDFA.at(cur).at(c);
+            if (cur==-1) return -1;
+        }
+        else return -1;
+    }
+    return cur;
+}
+MDFA MDFA::invHom(const std::map<char, const std::string>& rules) {
+    MDFA res;
 
+    for (const auto& [sym,_] : rules) {
+        res.alphabet.insert(sym);
+    }
+    res.startMDFA= this->startMDFA;
+    res.finalPi = this->finalPi;
+    std::cout << "source table size: " << tableTransitionMDFA.size() << "\n";
+    std::cout << "source finals: " << finalPi.size() << "\n";
+    std::cout << "source start: " << startMDFA << "\n";
+    for (const auto& [state,_] : tableTransitionMDFA) {
+        for (const auto& [sym,targ] : rules) {
+            int arrState = runSt(state,targ);
+            if (arrState!=-1) res.tableTransitionMDFA[state][sym] = arrState;
+            std::cout << "  " << state << " --" << sym << "--> " << targ << "\n";
+        }
+    }
+    std::cout << "before selfMin: states=" << res.tableTransitionMDFA.size()
+          << " finals=" << res.finalPi.size() << "\n";
+    res.selfMin();
+    std::cout << "after selfMin: states=" << res.tableTransitionMDFA.size()
+          << " finals=" << res.finalPi.size() << "\n";
+    return res;
+}
 std::set<int> getFinal(const DFA& dfa) {
     return dfa.finalDFA;
 }
@@ -132,6 +170,7 @@ bool MDFA::search(const std::string& str) {
 }
 
 
+
 void MDFA::selfMin() {
     DFA temp;
     temp.startDFA =this->startMDFA;
@@ -160,7 +199,7 @@ std::vector<int> MDFA::getAllFinInd(const std::string& s) {
     return indices;
 }
 
-Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
+Product MDFA::getProduct(const MDFA& A, const MDFA& B)  {
     Product product;
     product.alphabet = A.alphabet;
     product.alphabet.insert(B.alphabet.begin(),B.alphabet.end());
@@ -217,6 +256,11 @@ MDFA MDFA::diff(const MDFA& A,  const MDFA& B, const bool d)  {
     res.selfMin();
     return res;
 }
+ bool MDFA::in(const MDFA &A, const MDFA &B) {
+    MDFA res = diff(A,B,true);
+    return res.isEmpty();
+}
+
 bool MDFA::equal(const MDFA& A,const MDFA& B) {
     const MDFA diff1 = diff(A,B,true);
     const MDFA diff2 = diff(B,A,true);

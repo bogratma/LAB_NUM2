@@ -56,6 +56,13 @@ postOrder(root,nodes);
             addTransition(first.end,second.start,'$');
             base.emplace(first.start,second.end);
         }
+        else if (c->type==EMPTY) {
+            State* start = create();
+            State* end = create();
+            addTransition(start,end,c->name);
+            end->isAcceptable=true;
+            base.emplace(start,end);
+        }
         else {
             State* start = create();
             State* end = create();
