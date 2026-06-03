@@ -9,7 +9,32 @@
 
 #include "ParserResult.h"
 #include "stack"
-
+std::unique_ptr<Node> reverse(std::unique_ptr<Node> root) {
+        if (root->type==SYM) {
+            return root;
+        }
+        if (root->type==OR) {
+            auto l = std::move(root->left);
+            auto r = std::move(root->right);
+            auto orNode = std::make_unique<Node>('|', reverse(std::move(l)), reverse(std::move(r)));
+            orNode->type = OR;
+            return orNode;
+        }
+        if (root->type==CONCAT) {
+            auto l = std::move(root->right);
+            auto r = std::move(root->left);
+            auto concNode = std::make_unique<Node>('.', reverse(std::move(l)), reverse(std::move(r)));
+            concNode->type = CONCAT;
+            return concNode;
+        }
+        if (root->type==STAR) {
+        auto l = std::move(root->left);
+        auto s = std::make_unique<Node>('*', reverse(std::move(l)), nullptr);
+        s->type = STAR;
+        return s;
+    }
+    return nullptr;
+}
 void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     if (op.empty()) throw std::runtime_error("Operation stack is empty");
     char c = op.top();
@@ -21,12 +46,20 @@ void useBinary(std::stack<std::unique_ptr<Node>>& syms, std::stack<char>& op) {
     syms.pop();
     auto binaryNode = std::make_unique<Node>(c, std::move(aNodeLeft), std::move(aNodeRight));
     if (c=='|') binaryNode->type=OR;
+    else if (c=='&') binaryNode->type=INTERSECT;
     else binaryNode->type=CONCAT;
     syms.push(std::move(binaryNode));
 
 }
 void useUnary(std::stack<std::unique_ptr<Node>>& syms, char c) {
     if (syms.empty()) throw std::runtime_error("Unary op error");
+    if (c=='r') {
+        if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
+        auto aNode = std::move(syms.top());
+        syms.pop();
+        auto newNode = reverse(std::move(aNode));
+        syms.push(std::move(newNode));
+    }
     if (c=='+') {
         if (syms.empty()) throw std::runtime_error("Invalid operation (need 1 operand)");
         auto aNode = std::move(syms.top());
@@ -51,6 +84,18 @@ void useUnary(std::stack<std::unique_ptr<Node>>& syms, char c) {
 std::unique_ptr<Node> useRange(const std::string& s, size_t& i) {
     const size_t close = s.find(']', i);
     if (close == std::string::npos) throw std::runtime_error("No ]");
+    if (s[i+1]=='^') {
+        auto node = std::make_unique<Node>('^');
+        node->type=SYM;
+        for (int j = i+1;j<s.size();++j) {
+            if (s[j]==']') {
+                i=j;
+                break;
+            }
+            node->zapr.insert(s[j]);
+        }
+        return node;
+    }
     std::unique_ptr<Node> rangeRoot = nullptr;
     for (size_t j = i + 1; j < close; ++j) {
         char start = s[j];
@@ -216,7 +261,7 @@ ParserResult Parser(const std::string& s) {
             prev=true;
         }
 
-        else if(!flag && (c=='*' || c=='+')) {
+        else if(!flag && (c=='*' || c=='+' || c=='r')) {
             useUnary(sym, c);
             prev = true;
         }
@@ -228,12 +273,25 @@ ParserResult Parser(const std::string& s) {
             op.push(c);
             prev = false;
         }
-        else if (!flag && c == '[') {
+        else if (!flag && c=='&') {
+            while (!op.empty() && getPrior(op.top())>=getPrior(c)) {
+                useBinary(sym, op);
+            }
+            op.push(c);
+            prev = false;
+        }
+        else if (!flag && c == '[' ) {
             sym.push(useRange(s, i));
             prev = true;
         }
         else if (!flag && c == '{') {
             useRepeat(sym, s, i);
+            prev = true;
+        }
+        else if (!flag && c=='#') {
+            auto aNode = std::make_unique<Node>(c);
+            aNode->type = DOT;
+            sym.push(std::move(aNode));
             prev = true;
         }
         else {
@@ -260,8 +318,10 @@ ParserResult Parser(const std::string& s) {
 
 int getPrior(char c) {
     switch (c) {
+        case 'r':
         case '*':
         case '+':return 3;
+        case '&':
         case '.': return 2;
         case '|': return 1;
         case '(':

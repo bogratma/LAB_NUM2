@@ -3,6 +3,9 @@
 //
 
 #include "Regex.h"
+#include <iostream>
+#include "algorithm"
+#include "../StateElimination/StateElim.h"
 void Regex::comp() {
     if (is_compiled) return;
     compileToMDFA(mainRoot.get(), mainAutomata, "main");
@@ -13,15 +16,26 @@ void Regex::comp() {
 }
 void Regex::compileToMDFA(Node* treeRoot, MDFA& target, const std::string& prefix) {
     if (!treeRoot) return;
-    NFA nfa;
-    nfa.compile(treeRoot);
-    nfa.dumpDot(prefix + "nfa.dot");
-    DFA dfa;
-    dfa.process(nfa);
-    dfa.dumpDot(prefix + "dfa.dot");
-    target.minimize(dfa);
-    target.dumpDOT(prefix + "mdfa.dot");
+        /*if (treeRoot->type==INTERSECT) {
+            MDFA left;
+            MDFA right;
+            compileToMDFA(treeRoot->left.get(),left,"L");
+            compileToMDFA(treeRoot->right.get(),right,"R");
+            target = MDFA::diff(left,right,false);
+            target.dumpDOT("res.dot");
+            return;
+        }*/
+        NFA nfa;
+        nfa.compile(treeRoot);
+        nfa.dumpDot(prefix + "nfa.dot");
+        DFA dfa;
+        dfa.process(nfa);
+        dfa.dumpDot(prefix + "dfa.dot");
+        target.minimize(dfa);
+        target.dumpDOT(prefix + "mdfa.dot");
+
 }
+
 bool Regex::match(const std::string& s) {
     if (!is_compiled) comp();
     const std::vector<int> points = mainAutomata.getAllFinInd(s);
@@ -38,6 +52,7 @@ bool Regex::match(const std::string& s) {
     if (points.empty()) return false;
     return points.back() == s.length();
 }
+
 bool Regex::search(const std::string& s) {
     if (!is_compiled) comp();
     const std::vector<int> points = mainAutomata.getAllFinInd(s);
@@ -51,7 +66,5 @@ bool Regex::search(const std::string& s) {
         }
         return false;
     }
-
-    if (points.empty()) return false;
-    return points.back() == s.length();
+    return !points.empty();
 }

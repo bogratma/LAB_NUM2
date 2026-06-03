@@ -24,7 +24,8 @@ int main() {
         std::cin >> n ;
         Regex regex(n);
         regex.comp();
-
+        std::cin >> n ;
+        std::cout<<regex.search(n)<<std::endl;
         /*std::string regular; //difference
         std::cout<<"Enter regular expression1: "<<std::endl;
         std::cin >> regular;

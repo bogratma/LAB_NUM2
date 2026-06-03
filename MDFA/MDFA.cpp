@@ -185,6 +185,7 @@ Product MDFA::getProduct(const MDFA& A,const MDFA& B)  {
                 nextB = B.tableTransitionMDFA.at(currPair.second).at(c);
             }
             std::pair nextPair = {nextA,nextB};
+
             if (!product.pairs.contains(nextPair)) {
                 product.pairs[nextPair] = nextId++;
                 q.push(nextPair);
@@ -271,3 +272,5 @@ void MDFA::dumpDOT(const std::string& filename) {
     out << "}" << std::endl;
     out.close();
 }
+
+

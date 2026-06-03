@@ -474,4 +474,5 @@ TEST_CASE("MDFA Product Logic") {
         CHECK(res.isEmpty() == true);
         CHECK(res.match("") == false);
     }
+
 }

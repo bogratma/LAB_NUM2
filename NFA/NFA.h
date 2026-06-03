@@ -23,7 +23,7 @@ public:
     std::set<char> alphabet;
     std::unordered_multimap<std::pair<State*,char>,State*,reHash> table;
     State* entry = nullptr;
-
+    void extractSubNFA(State* start, NFA& target);
     State* create() {
         states.push_back(std::make_unique<State>());
         return states.back().get();
